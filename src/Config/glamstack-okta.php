@@ -3,7 +3,7 @@
 return [
 
     /**
-     * Log Channel Name
+     * Log Channels
      * ------------------------------------------------------------------------
      * Throughout the SDK, we use the config('glamstack-okta.log_channels')
      * array variable to allow you to set the log channels (custom log stack)
