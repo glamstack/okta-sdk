@@ -32,7 +32,7 @@ The Okta SDK is an open source [Composer](https://getcomposer.org/) package crea
 composer require glamstack/okta-sdk
 ```
 
-> If you are contributing to this package, see `CONTRIBUTING.md` for instructions on configuring a local composer package with symlinks.
+> If you are contributing to this package, see [CONTRIBUTING](CONTRIBUTING.md) for instructions on configuring a local composer package with symlinks.
 
 ### Custom Logging Configuration
 
