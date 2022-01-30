@@ -333,6 +333,42 @@ class ApiClient
     }
 
     /**
+     * Okta API PUT Request
+     * This method is called from other services to perform a PUT request and
+     * return a structured object.
+     *
+     * Example Usage:
+     * ```php
+     * $okta_api = new \Glamstack\Okta\ApiClient('prod');
+     * return $okta_api->put('/projects/12345678', [
+     *      'description' => 'This is an updated project description'
+     * ]);
+     * ```
+     *
+     * @param string $uri The URI with leading slash after `/api/v4`
+     *
+     * @param array $request_data Optional request data to send with PUT request
+     *
+     * @return object See parseApiResponse() method. The content and
+     *      schema of the object and json arrays can be found in the REST API
+     *      documentation for the specific endpoint.
+     */
+    public function put(string $uri, array $request_data = []): object|string
+    {
+        try {
+            $request = Http::withHeaders($this->request_headers)
+                ->put($this->base_url . $uri, $request_data);
+
+            $response = $this->parseApiResponse($request);
+
+            $this->logResponse('put', $this->base_url . $uri, $response);
+
+            return $response;
+        } catch (\Illuminate\Http\Client\RequestException $exception) {
+            return $this->handleException($exception, get_class(), $uri);
+        }
+    }
+    /**
      * Convert API Response Headers to Object
      * This method is called from the parseApiResponse method to prettify the
      * Guzzle Headers that are an array with nested array for each value, and
