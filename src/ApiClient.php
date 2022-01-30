@@ -234,6 +234,75 @@ class ApiClient
         }
     }
 
+    /**
+     * Convert API Response Headers to Object
+     * This method is called from the parseApiResponse method to prettify the
+     * Guzzle Headers that are an array with nested array for each value, and
+     * converts the single array values into strings and converts to an object for
+     * easier and consistent accessibility with the parseApiResponse format.
+     *
+     * @param array $header_response
+     * [
+     *     "Date" => array:1 [
+     *       0 => "Sun, 30 Jan 2022 01:18:14 GMT"
+     *     ]
+     *     "Content-Type" => array:1 [
+     *       0 => "application/json"
+     *     ]
+     *     "Transfer-Encoding" => array:1 [
+     *       0 => "chunked"
+     *     ]
+     *     "Connection" => array:1 [
+     *       0 => "keep-alive"
+     *     ]
+     *     "Server" => array:1 [
+     *       0 => "nginx"
+     *     ]
+     *     // ...
+     * ]
+     *
+     * @return array
+     * [
+     *     "Date" => "Sun, 30 Jan 2022 01:11:44 GMT",
+     *     "Content-Type" => "application/json",
+     *     "Transfer-Encoding" => "chunked",
+     *     "Connection" => "keep-alive",
+     *     "Server" => "nginx",
+     *     "Public-Key-Pins-Report-Only" => "pin-sha256="REDACTED="; pin-sha256="REDACTED="; pin-sha256="REDACTED="; pin-sha256="REDACTED="; max-age=60; report-uri="https://okta.report-uri.com/r/default/hpkp/reportOnly"",
+     *     "Vary" => "Accept-Encoding",
+     *     "x-okta-request-id" => "A1b2C3D4e5@f6G7H8I9j0k1L2M3",
+     *     "x-xss-protection" => "0",
+     *     "p3p" => "CP="HONK"",
+     *     "x-rate-limit-limit" => "1000",
+     *     "x-rate-limit-remaining" => "998",
+     *     "x-rate-limit-reset" => "1643505155",
+     *     "cache-control" => "no-cache, no-store",
+     *     "pragma" => "no-cache",
+     *     "expires" => "0",
+     *     "content-security-policy" => "default-src 'self' mycompany.okta.com *.oktacdn.com; connect-src 'self' mycompany.okta.com mycompany-admin.okta.com *.oktacdn.com *.mixpanel.com *.mapbox.com app.pendo.io data.pendo.io pendo-static-5634101834153984.storage.googleapis.com mycompany.kerberos.okta.com https://oinmanager.okta.com data:; script-src 'unsafe-inline' 'unsafe-eval' 'self' mycompany.okta.com *.oktacdn.com; style-src 'unsafe-inline' 'self' mycompany.okta.com *.oktacdn.com app.pendo.io cdn.pendo.io pendo-static-5634101834153984.storage.googleapis.com; frame-src 'self' mycompany.okta.com mycompany-admin.okta.com login.okta.com; img-src 'self' mycompany.okta.com *.oktacdn.com *.tiles.mapbox.com *.mapbox.com app.pendo.io data.pendo.io cdn.pendo.io pendo-static-5634101834153984.storage.googleapis.com data: blob:; font-src 'self' mycompany.okta.com data: *.oktacdn.com fonts.gstatic.com",
+     *     "expect-ct" => "report-uri="https://oktaexpectct.report-uri.com/r/t/ct/reportOnly", max-age=0",
+     *     "x-content-type-options" => "nosniff",
+     *     "Strict-Transport-Security" => "max-age=315360000; includeSubDomains",
+     *     "set-cookie" => "sid=""; Expires=Thu, 01-Jan-1970 00:00:10 GMT; Path=/ autolaunch_triggered=""; Expires=Thu, 01-Jan-1970 00:00:10 GMT; Path=/ JSESSIONID=E07ED763D2ADBB01B387772B9FB46EBF; Path=/; Secure; HttpOnly"
+     * ]
+     */
+    public function convertHeadersToArray(array $header_response): array
+    {
+        $headers = [];
+
+        foreach ($header_response as $header_key => $header_value) {
+            // If array has multiple keys, leave as array
+            if (count($header_value) > 1) {
+                $headers[$header_key] = $header_value;
+
+            // If array has a single key, convert to a string
+            } else {
+                $headers[$header_key] = $header_value[0];
+            }
+        }
+
+        return $headers;
+    }
 
     /**
      * Parse the API response and return custom formatted response for consistency
