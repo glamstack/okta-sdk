@@ -26,6 +26,8 @@ return [
      * https://laravel.com/docs/8.x/logging
      */
 
-    'log_channels' => ['single'],
+    'auth' => [
+        'log_channels' => ['single'],
+    ],
 
 ];
