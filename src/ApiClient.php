@@ -366,6 +366,72 @@ class ApiClient
             return null;
         }
     }
+
+    /**
+     * Helper function used to get Okta API results that require pagination.
+     *
+     * @see https://developer.okta.com/docs/reference/core-okta-api/#pagination
+     *
+     * Example Usage:
+     * ```php
+     * $this->getPaginatedResults('/users');
+     * ```
+     *
+     * @param string $endpoint The endpoint to use Okta API on.
+     *
+     * @param mixed $query_string Optional request data to send with GET request
+     *
+     * @return array An array of the response objects for each page combined.
+     */
+    public function getPaginatedResults(string $paginated_url): array
+    {
+        // Define empty array for adding API results to
+        $records = [];
+
+        // Perform API calls while $api_url is not null
+        do {
+            // Get the record
+            $request = Http::withHeaders($this->request_headers)
+                ->get($paginated_url);
+
+            $response = $this->parseApiResponse($request);
+            $this->logResponse('get', $paginated_url, $response);
+
+            // Loop through each object from the response and add it to
+            // the $records array
+            foreach ($response->object as $api_record) {
+                $records[] = $api_record;
+            }
+
+            // Get next page of results by parsing link and updating URL
+            if ($this->checkForPagination($response->headers)) {
+                $paginated_url = $this->generateNextPaginatedResultUrl($response->headers);
+            } else {
+                $paginated_url = null;
+            }
+        } while ($paginated_url != null);
+
+        return $records;
+    }
+
+    /**
+     * Convert paginated API response array into an object
+     *
+     * @param array $paginatedResponse Combined object returns from multiple pages of
+     * API responses.
+     *
+     * @return object Object of the API responses combined.
+     */
+    public function convertPaginatedResponseToObject(array $paginatedResponse): object
+    {
+        $results = [];
+
+        foreach ($paginatedResponse as $response_key => $response_value) {
+            $results[$response_key] = $response_value;
+        }
+        return (object) $results;
+    }
+
     /**
      * Parse the API response and return custom formatted response for consistency
      *
