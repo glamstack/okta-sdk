@@ -235,6 +235,64 @@ class ApiClient
     }
 
     /**
+     * Okta API Get Request
+     *
+     * Example Usage:
+     * ```php
+     * $okta_api = new \Glamstack\Okta\ApiClient('prod');
+     * return $okta_api->get('/users/'.$id);
+     * ```
+     * @param string $uri The URI with leading slash after `/api/v1`
+     *
+     * @param array $request_data Optional query data to apply to GET request
+     *
+     * @return object|string See parseApiResponse() method. The content and
+     *      schema of the object and json arrays can be found in the REST API
+     *      documentation for the specific endpoint.
+     */
+    public function get(string $uri, array $request_data = []): object|string
+    {
+        try {
+            // Utilize HTTP to run a GET request against the base URL with the
+            // URI supplied from the parameter appended to the end.
+            $request = Http::withHeaders($this->request_headers)
+                ->get($this->base_url . $uri, $request_data);
+
+            // Parse API Response and convert to returnable object with expected format
+            $response = $this->parseApiResponse($request, false);
+            $this->logResponse('get', $this->base_url . $uri, $response);
+
+            // If the response is a paginated response
+            if ($this->checkForPagination($response->headers) == true) {
+
+                // Get paginated URL and send the request to the getPaginatedResults
+                // helper function which loops through all paginated requests
+                $paginated_url = $this->generateNextPaginatedResultUrl($response->headers);
+                $paginated_results = $this->getPaginatedResults($paginated_url);
+
+                // The $paginated_results will be returned as an object of objects
+                // which needs to be converted to a flat object for standardizing
+                // the response returned. This needs to be a separate function
+                // instead of casting to an object due to return body complexities
+                // with nested array and object mixed notation.
+                $request->paginated_results = $this->convertPaginatedResponseToObject($paginated_results);
+
+                // Unset property for body and json
+                unset($request->body);
+                unset($request->json);
+
+                // Parse API Response and convert to returnable object with expected format
+                // The checkForPagination method will return a boolean that is passed.
+                $response = $this->parseApiResponse($request, true);
+            }
+
+            return $response;
+        } catch (\Illuminate\Http\Client\RequestException $exception) {
+            return $this->handleException($exception, get_class(), $uri);
+        }
+    }
+
+    /**
      * Convert API Response Headers to Object
      * This method is called from the parseApiResponse method to prettify the
      * Guzzle Headers that are an array with nested array for each value, and
