@@ -234,4 +234,33 @@ class ApiClient
         }
     }
 
+
+    /**
+     * Handle Okta API Exception
+     *
+     * @see https://developer.okta.com/docs/reference/error-codes/
+     *
+     * @param \Illuminate\Http\Client\RequestException $exception An instance of the exception
+     *
+     * @param string $log_class get_class()
+     *
+     * @param string $reference Reference slug or identifier
+     *
+     * @return string Error message
+     */
+    public function handleException($exception, $log_class, $reference)
+    {
+        Log::stack((array) $this->connection_config['log_channels'])
+            ->error($exception->getMessage(), [
+                'class' => $log_class,
+                'connection_key' => $this->connection_key,
+                'event_type' => 'okta-sdk-exception-error',
+                'exception' => $exception,
+                'message' => $exception->getMessage(),
+                'reference' => $reference,
+                'status_code' => $exception->getCode(),
+            ]);
+
+        return $exception->getMessage();
+    }
 }
