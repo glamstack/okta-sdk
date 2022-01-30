@@ -236,6 +236,57 @@ class ApiClient
 
 
     /**
+     * Parse the API response and return custom formatted response for consistency
+     *
+     * @see https://laravel.com/docs/8.x/http-client#making-requests
+     *
+     * @param object $response Response object from API results
+     *
+     * @param false $paginated If the response is paginated or not
+     *
+     * @return object Custom response returned for consistency
+     *  {
+     *    +"headers": [
+     *      "Date" => "Fri, 12 Nov 2021 20:13:55 GMT",
+     *      "Content-Type" => "application/json",
+     *      "Content-Length" => "1623",
+     *      "Connection" => "keep-alive"
+     *    ],
+     *    +"json": "{"id":12345678,"name":"Dade Murphy","username":"z3r0c00l","state":"active"}"
+     *    +"object": {
+     *      +"id": 12345678
+     *      +"name": "Dade Murphy"
+     *      +"username": "z3r0c00l"
+     *      +"state": "active"
+     *    }
+     *    +"status": {
+     *      +"code": 200
+     *      +"ok": true
+     *      +"successful": true
+     *      +"failed": false
+     *      +"serverError": false
+     *      +"clientError": false
+     *   }
+     * }
+     */
+    public function parseApiResponse(object $response, bool $paginated = false): object
+    {
+        return (object) [
+            'headers' => $this->convertHeadersToArray($response->headers()),
+            'json' => $paginated == true ? json_encode($response->paginated_results) : json_encode($response->json()),
+            'object' => $paginated == true ? (object) $response->paginated_results : $response->object(),
+            'status' => (object) [
+                'code' => $response->status(),
+                'ok' => $response->ok(),
+                'successful' => $response->successful(),
+                'failed' => $response->failed(),
+                'serverError' => $response->serverError(),
+                'clientError' => $response->clientError(),
+            ],
+        ];
+    }
+
+    /**
      * Handle Okta API Exception
      *
      * @see https://developer.okta.com/docs/reference/error-codes/
