@@ -10,6 +10,8 @@ use Illuminate\Support\Str;
 
 class ApiClient
 {
+    use ResponseLog;
+
     const API_VERSION = 1;
 
     private ?string $api_token;
