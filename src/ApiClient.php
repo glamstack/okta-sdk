@@ -368,6 +368,43 @@ class ApiClient
             return $this->handleException($exception, get_class(), $uri);
         }
     }
+
+    /**
+     * Okta API DELETE Request
+     * This method is called from other services to perform a DELETE request and return a structured object.
+     *
+     * Example Usage:
+     * ```php
+     * $group_id = '00ub0oNGTSWTBKOLGLNR';
+     *
+     * $okta_api = new \Glamstack\Okta\ApiClient('prod');
+     * return $okta_api->delete('/user/'.$group_id);
+     * ```
+     *
+     * @param string $uri The URI with leading slash after `/api/v4`
+     *
+     * @param array $request_data Optional request data to send with DELETE request
+     *
+     * @return object|string See parseApiResponse() method. The content and
+     *      schema of the object and json arrays can be found in the REST API
+     *      documentation for the specific endpoint.
+     */
+    public function delete(string $uri, array $request_data = []): object|string
+    {
+        try {
+            $request = Http::withHeaders($this->request_headers)
+                ->delete($this->base_url . $uri, $request_data);
+
+            $response = $this->parseApiResponse($request);
+
+            $this->logResponse('delete', $this->base_url . $uri, $response);
+
+            return $response;
+        } catch (\Illuminate\Http\Client\RequestException $exception) {
+            return $this->handleException($exception, get_class(), $uri);
+        }
+    }
+
     /**
      * Convert API Response Headers to Object
      * This method is called from the parseApiResponse method to prettify the
