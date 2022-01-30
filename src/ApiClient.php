@@ -305,6 +305,68 @@ class ApiClient
     }
 
     /**
+     * Check if the responses uses pagination and contains multiple pages
+     *
+     * @param array $headers API response headers from Okta request or parsed response.
+     *
+     * @return bool True if the response requires multiple pages | False if response is a single page
+     */
+    public function checkForPagination(array $headers): bool
+    {
+        // If a 'link' header exists, then there is another page to loop
+        // <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
+        if (array_key_exists('link', $headers)) {
+            if (is_array($headers['link'])) {
+                foreach ($headers['link'] as $link_key => $link_url) {
+                    if (Str::contains($link_url, 'next')) {
+                        return true;
+                    }
+                }
+            }
+
+            // If no links contain next, return false result
+            return false;
+        } else {
+            // If links array key does not exist, return false result
+            return false;
+        }
+    }
+
+    /**
+     * Parse the header array for the paginated URL that contains `next`.
+     *
+     * Note: The Okta SDK uses a cursor pagination instead of page navigation.
+     *
+     * @see https://developer.okta.com/docs/reference/core-okta-api/#pagination
+     *
+     * @param array $headers API response headers from Okta request or parsed response.
+     *
+     * @return ?string URL string or null if not found
+     */
+    public function generateNextPaginatedResultUrl(array $headers): string
+    {
+        // If a 'link' header exists, then there is another page to loop
+        // <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
+        if (array_key_exists('link', $headers)) {
+            foreach ($headers['link'] as $link_key => $link_url) {
+                if (Str::contains($link_url, 'next')) {
+                    // Remove the '<' and '>; rel="next"' that is around the next api_url
+                    // Before: <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
+                    // After: https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50
+                    $url = Str::remove('<', $headers['link'][$link_key]);
+                    $url = Str::remove('>; rel="next"', $url);
+
+                    return $url;
+                }
+            }
+
+            // If no links contain next, return null result
+            return null;
+        } else {
+            return null;
+        }
+    }
+    /**
      * Parse the API response and return custom formatted response for consistency
      *
      * @see https://laravel.com/docs/8.x/http-client#making-requests
