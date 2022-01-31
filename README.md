@@ -326,6 +326,185 @@ $okta_api = new \Glamstack\Okta\ApiClient('prod', $api_token);
 $groups = $okta_api->get('/groups')->object();
 ```
 
+## API Requests
+
+You can make an API request to any of the resource endpoints in the [Okta REST API Documentation](https://developer.okta.com/docs/reference/core-okta-api/).
+
+#### Inline Usage
+
+```php
+// Initialize the SDK
+$okta_api = new \Glamstack\Okta\ApiClient('prod');
+```
+
+### GET Requests
+
+The endpoint starts with a leading `/` after `/api/v1`. The Okta API documentation provides the full endpoint, so remove the `/api/v1` when copy and pasting the endpoint.
+
+See the [List all groups](https://developer.okta.com/docs/reference/api/groups/#list-groups) API documentation as reference for the examples below.
+
+With the SDK, you use the `get()` method with the endpoint `/groups` as the first argument.
+
+```php
+$okta_api->get('/groups');
+```
+
+You can also use variables or database models to get data for constructing your endpoints.
+
+```php
+$endpoint = '/groups';
+$records = $okta_api->get($endpoint);
+```
+
+Here are some more examples of using endpoints.
+
+```php
+// Get a list of records
+// https://developer.okta.com/docs/reference/api/groups/#list-groups
+$records = $okta_api->get('/groups');
+
+// Get a specific record
+// https://developer.okta.com/docs/reference/api/groups/#get-group
+$record = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+
+// Get a specific record using a variable
+// This assumes that you have a database column named `api_group_id` that
+// contains the string with the Okta ID `0oa1ab2c3D4E5F6G7h8i`.
+$okta_group = App\Models\OktaGroup::where('id', $id)->firstOrFail();
+$api_group_id = $okta_group->api_group_id;
+$record = $okta_api->get('/groups/'.$api_group_id);
+```
+
+### GET Requests with Query String Parameters
+
+The second argument of a `get()` method is an optional array of parameters that is parsed by the SDK and the [Laravel HTTP Client](https://laravel.com/docs/8.x/http-client#get-request-query-parameters) and rendered as a query string with the `?` and `&` added automatically.
+
+```php
+// Search for records with a specific name
+// https://developer.okta.com/docs/reference/api/groups/#list-groups
+// https://developer.okta.com/docs/reference/core-okta-api/#filter
+$records = $okta_api->get('/groups', [
+    'q' => 'Hack the Planet Engineers'
+]);
+
+// This will parse the array and render the query string
+// https://mycompany.okta.com/api/v1/groups?q=Hack%20the&%20Planet%20Engineers
+```
+
+### POST Requests
+
+The `post()` method works almost identically to a `get()` request with an array of parameters, however the parameters are passed as form data using the `application/json` content type rather than in the URL as a query string. This is industry standard and not specific to the SDK.
+
+You can learn more about request data in the [Laravel HTTP Client documentation](https://laravel.com/docs/8.x/http-client#request-data).
+
+```php
+// Create a group
+// https://developer.okta.com/docs/reference/api/groups/#add-group
+$record = $okta_api->post('/groups', [
+    'name' => 'Hack the Planet Engineers',
+    'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+]);
+```
+
+### PUT Requests
+
+The `put()` method is used for updating an existing record (similar to `PATCH` requests). You need to ensure that the ID of the record that you want to update is provided in the first argument (URI).
+
+In most applications, this will be a variable that you get from your database or another location and won't be hard-coded.
+
+```php
+// Update a group
+// https://developer.okta.com/docs/reference/api/groups/#update-group
+$group_id = '0oa1ab2c3D4E5F6G7h8i';
+$record = $okta_api->put('/groups/' . $group_id, [
+    'description' => 'This group contains engineers that have liberated the garbage files.'
+]);
+```
+
+### DELETE Requests
+
+The `delete()` method is used for methods that will destroy the resource based on the ID that you provide.
+
+Keep in mind that `delete()` methods will return different status codes depending on the vendor (ex. 200, 201, 202, 204, etc). Okta's API will return a `204` status code for successfully deleted resources.
+
+```php
+// Delete a group
+// https://developer.okta.com/docs/reference/api/groups/#remove-group
+$group_id = '0oa1ab2c3D4E5F6G7h8i';
+$record = $okta_api->delete('/groups/' . $group_id);
+```
+
+### Class Methods
+
+The examples above show basic inline usage that is suitable for most use cases. If you prefer to use classes and constructors, the example below will provide a helpful example.
+
+```php
+<?php
+
+use Glamstack\Okta\ApiClient;
+
+class OktaGroupService
+{
+    protected $okta_api;
+
+    public function __construct($connection_key = 'prod')
+    {
+        $this->$okta_api = new \Glamstack\Okta\ApiClient($connection_key);
+    }
+
+    public function listGroups($query = [])
+    {
+        $groups = $this->$okta_api->get('/groups', $query);
+
+        return $groups->object;
+    }
+
+    public function getGroup($id, $query = [])
+    {
+        $group = $this->$okta_api->get('/groups/'.$id, $query);
+
+        return $group->object;
+    }
+
+    public function storeGroup($request_data)
+    {
+        $group = $this->$okta_api->post('/groups', $request_data);
+
+        // To return an object with the newly created group
+        return $group->object;
+
+        // To return the ID of the newly created group
+        // return $group->object->id;
+
+        // To return the status code of the form request
+        // return $group->status->code;
+
+        // To return a bool with the status of the form request
+        // return $group->status->successful;
+
+        // To return the entire API response with the object, json, headers, and status
+        // return $group;
+    }
+
+    public function updateGroup($id, $request_data)
+    {
+        $group = $this->$okta_api->put('/groups/'.$id, $request_data);
+
+        // To return an object with the updated group
+        return $group->object;
+
+        // To return a bool with the status of the form request
+        // return $group->status->successful;
+    }
+
+    public function deleteGroup($id)
+    {
+        $group = $this->$okta_api->delete('/groups/'.$id);
+
+        return $group->status->successful;
+    }
+}
+```
 ## Issue Tracking and Bug Reports
 
 Please visit our [issue tracker](https://gitlab.com/gitlab-com/business-technology/engineering/access-manager/packages/composer/okta-sdk/-/issues) and create an issue or comment on an existing issue.
