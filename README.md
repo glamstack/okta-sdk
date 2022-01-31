@@ -258,6 +258,74 @@ Finally, update the `config/glamstack-okta.php` configuration.
 
 You can repeat these configuration steps to customize any of your connection keys.
 
+## Security Best Practices
+
+### No Shared Tokens
+
+Don't use an API token that you have already created for another purpose. You should generate a new Access Token for each use case.
+
+This is helpful during security incidents when a key needs to be revoked on a compromised system and you don't want other systems that use the same user or service account to be affected since they use a different key that wasn't revoked.
+
+### API Token Storage
+
+Do not add your API token to the `config/glamstack-okta.php` file to avoid committing to your repository (secret leak).
+
+All API tokens should be defined in the `.env` file which is included in `.gitignore` and not committed to your repository.
+
+It is a recommended to store a copy of each API token in your preferred password manager (ex. 1Password, LastPass, etc.) and/or secrets vault (ex. HashiCorp Vault, Ansible, etc.).
+
+### API Token Permissions
+
+Different Okta API operations require different admin privilege levels. API tokens inherit the privilege level of the admin account that is used to create them. It is therefore good practice to create a service account to use when you create API tokens so that you can assign the token the specific privilege level needed. See [Administrators documentation](https://help.okta.com/okta_help.htm?id=ext_Security_Administrators) for admin account types and the specific privileges of each.
+
+Credit: [Okta Documentation - Create an API Token](https://developer.okta.com/docs/guides/create-an-api-token/main/)
+
+#### Least Privilege
+
+If you need to use different tokens for least privilege security reasons, you can customize `config/glamstack-okta.php` to add the same Okta instance multiple times with different connection keys using any names that fit your needs (ex. `prod_scope1`, `prod_scope2`, `prod_scope3`.
+
+You can customize the `.env` variable names as needed. The SDK uses the values from the `config/glamstack-okta.php` file and does not use any `.env` variables directly.
+
+```php
+'prod_scope1' => [
+    'base_url' => env('OKTA_PROD_BASE_URL'),
+    'api_token' => env('OKTA_PROD_SCOPE1_API_TOKEN'),
+    'log_channels' => ['single']
+],
+
+'prod_scope2' => [
+    'base_url' => env('OKTA_PROD_BASE_URL'),
+    'api_token' => env('OKTA_PROD_SCOPE2_API_TOKEN'),
+    'log_channels' => ['single']
+],
+
+'prod_scope3' => [
+    'base_url' => env('OKTA_PROD_BASE_URL'),
+    'api_token' => env('OKTA_PROD_SCOPE3_API_TOKEN'),
+    'log_channels' => ['single']
+],
+```
+
+You simply need to provide the instance key when invoking the SDK, and you may need to store the connection keys in your application's database for dynamically rendered pages.
+
+```php
+$okta_api = new \Glamstack\Okta\ApiClient('prod_scope1');
+$groups = $gitlab_api->get('/groups')->object();
+```
+
+Alternatively, you can provide a different API key when initializing the service using the second argument. The API token from `config/glamstack-okta.php` is used if the second argument is not provided. This is helpful if your API tokens are stored in your database and are not hard coded into your `.env` file.
+
+```php
+// Get the API token from a model in your application.
+// Disclaimer: This is an example and is not a feature of the SDK.
+$service_account = App\Models\OktaServiceAccount::where('id', $id)->firstOrFail();
+$api_token = decrypt($service_account->api_token);
+
+// Use the SDK to connect using your access token.
+$okta_api = new \Glamstack\Okta\ApiClient('prod', $api_token);
+$groups = $okta_api->get('/groups')->object();
+```
+
 ## Issue Tracking and Bug Reports
 
 Please visit our [issue tracker](https://gitlab.com/gitlab-com/business-technology/engineering/access-manager/packages/composer/okta-sdk/-/issues) and create an issue or comment on an existing issue.
