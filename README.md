@@ -17,6 +17,66 @@ The Okta SDK is an open source [Composer](https://getcomposer.org/) package crea
 | [Dillon Wheeler](https://about.gitlab.com/company/team/#dillonwheeler) | [@dillonwheeler](https://gitlab.com/dillonwheeler) |
 | [Jeff Martin](https://about.gitlab.com/company/team/#jeffersonmartin) | [@jeffersonmartin](https://gitlab.com/jeffersonmartin) |
 
+### How It Works
+
+The URL of your Okta instance (ex. `https://mycompany.okta.com`) and API Token is specified in `config/glamstack-okta.php` using variables inherited from your `.env` file.
+
+The package is not intended to provide functions for every endpoint in the Okta API.
+
+We have taken a simpler approach by providing a universal `ApiClient` that can perform `GET`, `POST`, `PUT`, and `DELETE` requests to any endpoint that you find in the [Okta API documentation](https://developer.okta.com/docs/reference/core-okta-api/) and handles the API response, error handling, and pagination for you.
+
+This builds upon the simplicity of the [Laravel HTTP Client](https://laravel.com/docs/8.x/http-client) that is powered by the [Guzzle HTTP client](http://docs.guzzlephp.org/en/stable/) to provide "last lines of code parsing" for Okta API responses to improve the developer experience.
+
+We have additional classes and methods for the endpoints that GitLab Access Manager uses frequently that we will [iterate](https://about.gitlab.com/handbook/values/#iteration) upon over time.
+
+```php
+// Initialize the SDK
+$okta_api = new \Glamstack\Okta\ApiClient('prod');
+
+// Get a list of records
+// https://developer.okta.com/docs/reference/api/groups/#list-groups
+$groups = $okta_api->get('/groups');
+
+// Search for records with a specific name
+// https://developer.okta.com/docs/reference/api/groups/#list-groups
+// https://developer.okta.com/docs/reference/core-okta-api/#filter
+$groups = $okta_api->get('/groups', [
+    'q' => 'Hack the Planet Engineers'
+]);
+
+// Search for records with a keyword across most metadata fields
+// https://developer.okta.com/docs/reference/api/users/#list-users
+// https://developer.okta.com/docs/reference/core-okta-api/#filter
+$users = $okta_api->get('/users', [
+    'filter' => 'firstName eq "Dade"'
+]);
+
+// Get a specific record
+// https://developer.okta.com/docs/reference/api/groups/#get-group
+$record = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+
+// Create a group
+// https://developer.okta.com/docs/reference/api/groups/#add-group
+$record = $okta_api->post('/groups', [
+    'name' => 'Hack the Planet Engineers',
+    'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+]);
+
+// Update a group
+// https://developer.okta.com/docs/reference/api/groups/#update-group
+$group_id = '0oa1ab2c3D4E5F6G7h8i';
+$record = $okta_api->put('/groups/' . $group_id, [
+    'description' => 'This group contains engineers that have liberated the garbage files.'
+]);
+
+// Delete a group
+// https://developer.okta.com/docs/reference/api/groups/#remove-group
+$group_id = '0oa1ab2c3D4E5F6G7h8i';
+$record = $okta_api->delete('/groups/' . $group_id);
+```
+
+See the [API Requests](#api-requests) and [API Responses](#api-responses) section below for more details.
+
 ## Installation
 
 ### Requirements
