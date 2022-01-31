@@ -44,14 +44,13 @@ class ApiClient
     }
 
     /**
-     * Set the connection_key class variable
-     *
-     * The connection_key variable by default will be set to `prod`. This can
-     * be overridden when initializing the SDK with a different connection key
-     * which is passed into this function to set the class variable to the key.
+     * Set the connection_key class property variable
      *
      * @param string $connection_key (Optional) The connection key to use from
-     * the configuration file.
+     *     the configuration file. If not set, it will use the default connection 
+     *     configured in OKTA_DEFAULT_CONNECTION `.env` variable. If the `.env` 
+     *     variable is not set, the value in `config/glamstack-okta.php` will be 
+     *     used, which has a default of the `prod` connection.
      *
      * @return void
      */
@@ -65,9 +64,11 @@ class ApiClient
     }
 
     /**
+     * Set the connection_config class property array 
+     *
      * Define an array in the class using the connection configuration in the
      * glamstack-okta.php connections array. If connection key is not specified,
-     * an error log will be created and this function will return false.
+     * an error log will be created and a 501 abort error will be thrown.
      *
      * @return void
      */
@@ -94,7 +95,7 @@ class ApiClient
     }
 
     /**
-     * Set the base_url class variable
+     * Set the base_url class property variable
      *
      * The base_url variable will use the connection configuration Base URL
      * that is defined in your `.env` file or config/glamstack-okta.php.
@@ -125,7 +126,7 @@ class ApiClient
     }
 
     /**
-     * Set the api_token class variable
+     * Set the api_token class property variable
      *
      * The api_token variable by default will use the connection configuration
      * API token that is defined in the `.env` file. When instantiating the
@@ -158,6 +159,7 @@ class ApiClient
                     'message' =>  $info_message,
                     'okta_connection' => $this->connection_key,
                 ]);
+
         // If API token is not defined, abort with an error message
         } else {
             $error_message = 'The API token for this Okta connection key ' .
@@ -214,7 +216,7 @@ class ApiClient
     }
 
     /**
-     * Test the connection to the Okta connection
+     * Test the connection to the Okta API
      *
      * @see https://developer.okta.com/docs/reference/api/org/#get-org-settings
      *
@@ -223,6 +225,7 @@ class ApiClient
     public function testConnection() : void
     {
         // API call to get Okta organization details (a simple API endpoint)
+        // Logging for the request is handled by the get() method.
         $response = $this->get('/org');
 
         if ($response->status->ok == false) {
@@ -296,6 +299,7 @@ class ApiClient
 
     /**
      * Okta API POST Request
+     * 
      * This method is called from other services to perform a POST request and
      * return a structured object.
      *
@@ -336,14 +340,18 @@ class ApiClient
 
     /**
      * Okta API PUT Request
+     * 
      * This method is called from other services to perform a PUT request and
      * return a structured object.
      *
      * Example Usage:
      * ```php
      * $okta_api = new \Glamstack\Okta\ApiClient('prod');
-     * return $okta_api->put('/projects/12345678', [
-     *      'description' => 'This is an updated project description'
+     * return $okta_api->post('/groups/' . $group_id, [
+     *      'profile' => [
+     *          'name' => 'Hack The Planet Apprentice Members',
+     *          'description' => 'This is for all team members that are not quite elite.'
+     *      ]
      * ]);
      * ```
      *
@@ -373,7 +381,9 @@ class ApiClient
 
     /**
      * Okta API DELETE Request
-     * This method is called from other services to perform a DELETE request and return a structured object.
+     * 
+     * This method is called from other services to perform a DELETE request and 
+     * return a structured object.
      *
      * Example Usage:
      * ```php
@@ -409,6 +419,7 @@ class ApiClient
 
     /**
      * Convert API Response Headers to Object
+     * 
      * This method is called from the parseApiResponse method to prettify the
      * Guzzle Headers that are an array with nested array for each value, and
      * converts the single array values into strings and converts to an object for
