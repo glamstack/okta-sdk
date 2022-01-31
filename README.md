@@ -630,6 +630,68 @@ $group->status->code;
 200
 ```
 
+## Error Handling
+
+The HTTP status code for the API response is included in each log entry in the message and in the JSON `status_code`. Any internal SDK errors also include an equivalent status code depending on the type of error. The `message` includes the SDK friendly message. If an exception is thrown, the `reference`
+
+If a `5xx` error is returned from the API, the `ApiClient` `handleException` method will return a response.
+
+See the [Log Outputs](#log-outputs) below for how the SDK handles errors and logging.
+
+See the [Okta API error codes documentation](https://developer.okta.com/docs/reference/error-codes/) to learn more about the codes that can be returned. More information on each resource endpoint can be found on the respective [API documentation page](https://developer.okta.com/docs/reference/core-okta-api/).
+
+## Log Outputs
+
+> The output of error messages is shown in the `README` to allow search engines to index these messages for developer debugging support. Any 5xx error messages will be returned as as `Symfony\Component\HttpKernel\Exception\HttpException` or configuration errors, including any errors in the `__construct()` method.
+
+### Instance Configuration and Authentication
+
+When the `ApiClient` class is invoked for the first time, an API connection test is performed to the `/org` endpoint of the Okta instance. This endpoint requires authentication, so this validates whether the Access Token is valid.
+
+```php
+$okta_api = new \Glamstack\Okta\ApiClient('prod');
+$okta_api->get('/groups/32589035');
+```
+
+#### Valid Access Token
+
+```json
+
+```
+
+#### Missing Access Token
+
+```json
+
+```
+
+#### Invalid Access Token
+
+```json
+
+```
+
+#### ApiClient Construct Access Token
+
+```php
+$okta_api = new \Glamstack\Okta\ApiClient('prod', '00fJq-A1b2C3d4E5f6G7h8I9J0-Kl-mNoPqRsTuVwx');
+$okta_api->get('/groups');
+```
+
+```json
+
+```
+
+#### Missing Connection Configuration
+
+```json
+// No instance key
+```
+
+```json
+// No base URL
+```
+
 ## Issue Tracking and Bug Reports
 
 Please visit our [issue tracker](https://gitlab.com/gitlab-com/business-technology/engineering/access-manager/packages/composer/okta-sdk/-/issues) and create an issue or comment on an existing issue.
