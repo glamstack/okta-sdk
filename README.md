@@ -505,6 +505,131 @@ class OktaGroupService
     }
 }
 ```
+
+## API Responses
+
+This SDK uses the GLAM Stack standards for API response formatting.
+
+```php
+// API Request
+$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+
+// API Response
+$group->headers; // array
+$group->json; // json
+$group->object; // object
+$group->status; // object
+$group->status->code; // int (ex. 200)
+$group->status->ok; // bool
+$group->status->successful; // bool
+$group->status->failed; // bool
+$group->status->serverError; // bool
+$group->status->clientError; // bool
+```
+
+#### API Response Headers
+
+> The headers are returned as an array instead of an object since the keys use hyphens that conflict with the syntax of accessing keys and values easily.
+
+```php
+$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group->headers;
+```
+
+```php
+[
+    "Date" => "Sun, 30 Jan 2022 01:11:44 GMT",
+    "Content-Type" => "application/json",
+    "Transfer-Encoding" => "chunked",
+    "Connection" => "keep-alive",
+    "Server" => "nginx",
+    "Public-Key-Pins-Report-Only" => "pin-sha256="REDACTED="; pin-sha256="REDACTED="; pin-sha256="REDACTED="; pin-sha256="REDACTED="; max-age=60; report-uri="https://okta.report-uri.com/r/default/hpkp/reportOnly"",
+    "Vary" => "Accept-Encoding",
+    "x-okta-request-id" => "A1b2C3D4e5@f6G7H8I9j0k1L2M3",
+    "x-xss-protection" => "0",
+    "p3p" => "CP="HONK"",
+    "x-rate-limit-limit" => "1000",
+    "x-rate-limit-remaining" => "998",
+    "x-rate-limit-reset" => "1643505155",
+    "cache-control" => "no-cache, no-store",
+    "pragma" => "no-cache",
+    "expires" => "0",
+    "content-security-policy" => "default-src 'self' mycompany.okta.com *.oktacdn.com; connect-src 'self' mycompany.okta.com mycompany-admin.okta.com *.oktacdn.com *.mixpanel.com *.mapbox.com app.pendo.io data.pendo.io pendo-static-5634101834153984.storage.googleapis.com mycompany.kerberos.okta.com https://oinmanager.okta.com data:; script-src 'unsafe-inline' 'unsafe-eval' 'self' mycompany.okta.com *.oktacdn.com; style-src 'unsafe-inline' 'self' mycompany.okta.com *.oktacdn.com app.pendo.io cdn.pendo.io pendo-static-5634101834153984.storage.googleapis.com; frame-src 'self' mycompany.okta.com mycompany-admin.okta.com login.okta.com; img-src 'self' mycompany.okta.com *.oktacdn.com *.tiles.mapbox.com *.mapbox.com app.pendo.io data.pendo.io cdn.pendo.io pendo-static-5634101834153984.storage.googleapis.com data: blob:; font-src 'self' mycompany.okta.com data: *.oktacdn.com fonts.gstatic.com",
+    "expect-ct" => "report-uri="https://oktaexpectct.report-uri.com/r/t/ct/reportOnly", max-age=0",
+    "x-content-type-options" => "nosniff",
+    "Strict-Transport-Security" => "max-age=315360000; includeSubDomains",
+    "set-cookie" => "sid=""; Expires=Thu, 01-Jan-1970 00:00:10 GMT; Path=/ autolaunch_triggered=""; Expires=Thu, 01-Jan-1970 00:00:10 GMT; Path=/ JSESSIONID=E07ED763D2ADBB01B387772B9FB46EBF; Path=/; Secure; HttpOnly"
+]
+```
+
+#### API Response Specific Header
+
+```php
+$content_type = $group->headers['Content-Type'];
+```
+
+```bash
+application/json
+```
+
+#### API Response JSON
+
+```php
+$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group->json;
+```
+
+```json
+"{"id":0oa1ab2c3D4E5F6G7h8i,"name":"Hack the Planet Engineers","state":"ACTIVE"}"
+```
+
+#### API Response Object
+
+```php
+$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group->object;
+```
+
+```php
+{
+  +"id": "0oa1ab2c3D4E5F6G7h8i"
+  +"description": "This group contains engineers that have proven they are elite enough to hack the Gibson."
+  +"name": "Hack the Planet Engineers"
+  +"state": "ACTIVE"
+}
+```
+
+#### API Response Status
+
+See the [Laravel HTTP Client documentation](https://laravel.com/docs/8.x/http-client#error-handling) to learn more about the different status booleans.
+
+```php
+$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group->status;
+```
+
+```php
+{
+  +"code": 200
+  +"ok": true
+  +"successful": true
+  +"failed": false
+  +"serverError": false
+  +"clientError": false
+}
+```
+
+#### API Response Status Code
+
+```php
+$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group->status->code;
+```
+
+```bash
+200
+```
+
 ## Issue Tracking and Bug Reports
 
 Please visit our [issue tracker](https://gitlab.com/gitlab-com/business-technology/engineering/access-manager/packages/composer/okta-sdk/-/issues) and create an issue or comment on an existing issue.
