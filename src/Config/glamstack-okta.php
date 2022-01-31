@@ -25,10 +25,10 @@ return [
      *      a custom log channel and add the channel name to the array. We 
      *      recommend creating a custom channel (ex. `glamstack-okta`), however 
      *      you can choose any name you would like.
-     *      Ex. ['single', 'glamstack-google-example']
+     *      Ex. ['single', 'glamstack-okta']
      *
      *      You can also add additional channels that logs should be sent to.
-     *      Ex. ['single', 'glamstack-google-example', 'slack']
+     *      Ex. ['single', 'glamstack-okta', 'slack']
      *
      *      @see https://laravel.com/docs/8.x/logging
      */
@@ -116,10 +116,10 @@ return [
      *      recommend creating a custom channel (ex. `glamstack-okta` for all 
      *      connections or `glamstack-okta-prod` for a specific connection), 
      *      however you can choose any name you would like.
-     *      Ex. ['single', 'glamstack-google-example']
+     *      Ex. ['single', 'glamstack-okta']
      *
      *      You can also add additional channels that logs should be sent to.
-     *      Ex. ['single', 'glamstack-google-example', 'slack']
+     *      Ex. ['single', 'glamstack-okta', 'slack']
      *
      *      @see https://laravel.com/docs/8.x/logging
      */
