@@ -656,19 +656,21 @@ $okta_api->get('/groups/32589035');
 #### Valid Access Token
 
 ```json
+[2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzENHYyWivKath4UvZhAAAAt8","rate_limit_remaining":"998","status_code":200} 
 
+[2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzEC100RhpyNJdV3sEiAAABmQ","rate_limit_remaining":"499","status_code":200} 
 ```
 
 #### Missing Access Token
 
 ```json
-
+[2022-01-31 23:40:26] local.CRITICAL: The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/glamstack-okta.php`. Without this API token, you will not be able to performed authenticated API calls. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/glamstack-okta.php`. Without this API token, you will not be able to performed authenticated API calls.","connection_key":"prod"} 
 ```
 
 #### Invalid Access Token
 
 ```json
-
+[2022-01-31 23:41:01] local.NOTICE: GET 401 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","event_type":"okta-api-response-client-error","message":"GET 401 https://gitlab.okta.com/api/v1/org","okta_request_id":"Yfhzjforta34Ho5ON3SqeQAADlY","okta_error_causes":[],"okta_error_code":"E0000011","okta_error_id":"oaepVpdl1ZQQO-U7Ki-e_-wHQ","okta_error_link":"E0000011","okta_error_summary":"Invalid token provided","rate_limit_remaining":null,"status_code":401} 
 ```
 
 #### ApiClient Construct Access Token
@@ -679,17 +681,23 @@ $okta_api->get('/groups');
 ```
 
 ```json
+[2022-01-31 23:42:04] local.NOTICE: The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used. {"event_type":"okta-api-config-override-notice","class":"Glamstack\\Okta\\ApiClient","status_code":"203","message":"The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used.","okta_connection":"prod"} 
 
+[2022-01-31 23:42:04] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzzDq5PIe70D1-C8HRHwAACdg","rate_limit_remaining":"999","status_code":200} 
+
+[2022-01-31 23:42:05] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzzK6LrJwm1XbvpcPnGwAAA6g","rate_limit_remaining":"499","status_code":200} 
 ```
 
 #### Missing Connection Configuration
 
 ```json
-// No instance key
+[2022-01-31 23:43:03] local.CRITICAL: The Okta connection key is not defined in `config/glamstack-okta.php` connections array. Without this array config, there is no URL or API token to connect with. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The Okta connection key is not defined in `config/glamstack-okta.php` connections array. Without this array config, there is no URL or API token to connect with.","connection_key":"test"} 
 ```
 
+#### Missing Base URL
+
 ```json
-// No base URL
+[2022-01-31 23:44:04] local.CRITICAL: The Base URL for this Okta connection key is not defined in `config/glamstack-okta.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The Base URL for this Okta connection key is not defined in `config/glamstack-okta.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with.","connection_key":"test"} 
 ```
 
 ## Issue Tracking and Bug Reports
