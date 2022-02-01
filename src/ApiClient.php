@@ -189,8 +189,8 @@ class ApiClient
     public function setRequestHeaders() : void
     {
         // Get Laravel and PHP Version
-        $laravel = 'Laravel/'.app()->version();
-        $php = 'PHP/'.phpversion();
+        $laravel = 'Laravel/' . app()->version();
+        $php = 'PHP/' . phpversion();
 
         // Decode the composer.lock file
         $composer_lock_json = json_decode((string) file_get_contents(base_path('composer.lock')), true);
@@ -206,12 +206,12 @@ class ApiClient
 
         // Reformat `glamstack/okta-sdk` as `Glamstack-Okta-Sdk`
         $composer_package_formatted = Str::title(Str::replace('/', '-', $composer_package['name']));
-        $package = $composer_package_formatted.'/'.$composer_package['version'];
+        $package = $composer_package_formatted . '/' . $composer_package['version'];
 
         // Define request headers
         $this->request_headers = [
             'Authorization' => 'SSWS ' . $this->api_token,
-            'User-Agent' => $package.' '.$laravel.' '.$php
+            'User-Agent' => $package . ' ' . $laravel . ' ' . $php
         ];
     }
 
