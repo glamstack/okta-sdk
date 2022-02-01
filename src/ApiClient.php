@@ -452,7 +452,7 @@ class ApiClient
      *     "Transfer-Encoding" => "chunked",
      *     "Connection" => "keep-alive",
      *     "Server" => "nginx",
-     *     "Public-Key-Pins-Report-Only" => "pin-sha256="REDACTED="; pin-sha256="REDACTED="; pin-sha256="REDACTED="; pin-sha256="REDACTED="; max-age=60; report-uri="https://okta.report-uri.com/r/default/hpkp/reportOnly"",
+     *     "Public-Key-Pins-Report-Only" => (truncated),
      *     "Vary" => "Accept-Encoding",
      *     "x-okta-request-id" => "A1b2C3D4e5@f6G7H8I9j0k1L2M3",
      *     "x-xss-protection" => "0",
@@ -463,11 +463,11 @@ class ApiClient
      *     "cache-control" => "no-cache, no-store",
      *     "pragma" => "no-cache",
      *     "expires" => "0",
-     *     "content-security-policy" => "default-src 'self' mycompany.okta.com *.oktacdn.com; connect-src 'self' mycompany.okta.com mycompany-admin.okta.com *.oktacdn.com *.mixpanel.com *.mapbox.com app.pendo.io data.pendo.io pendo-static-5634101834153984.storage.googleapis.com mycompany.kerberos.okta.com https://oinmanager.okta.com data:; script-src 'unsafe-inline' 'unsafe-eval' 'self' mycompany.okta.com *.oktacdn.com; style-src 'unsafe-inline' 'self' mycompany.okta.com *.oktacdn.com app.pendo.io cdn.pendo.io pendo-static-5634101834153984.storage.googleapis.com; frame-src 'self' mycompany.okta.com mycompany-admin.okta.com login.okta.com; img-src 'self' mycompany.okta.com *.oktacdn.com *.tiles.mapbox.com *.mapbox.com app.pendo.io data.pendo.io cdn.pendo.io pendo-static-5634101834153984.storage.googleapis.com data: blob:; font-src 'self' mycompany.okta.com data: *.oktacdn.com fonts.gstatic.com",
+     *     "content-security-policy" => (truncated),
      *     "expect-ct" => "report-uri="https://oktaexpectct.report-uri.com/r/t/ct/reportOnly", max-age=0",
      *     "x-content-type-options" => "nosniff",
      *     "Strict-Transport-Security" => "max-age=315360000; includeSubDomains",
-     *     "set-cookie" => "sid=""; Expires=Thu, 01-Jan-1970 00:00:10 GMT; Path=/ autolaunch_triggered=""; Expires=Thu, 01-Jan-1970 00:00:10 GMT; Path=/ JSESSIONID=E07ED763D2ADBB01B387772B9FB46EBF; Path=/; Secure; HttpOnly"
+     *     "set-cookie" => (truncated)
      * ]
      */
     public function convertHeadersToArray(array $header_response): array
