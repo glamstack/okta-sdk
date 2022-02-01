@@ -314,7 +314,7 @@ class ApiClient
      * ]);
      * ```
      *
-     * @param string $uri The URI with leading slash after `/api/v4`
+     * @param string $uri The URI with leading slash after `/api/v1`
      *
      * @param array $request_data Optional Post Body array
      *
@@ -355,7 +355,7 @@ class ApiClient
      * ]);
      * ```
      *
-     * @param string $uri The URI with leading slash after `/api/v4`
+     * @param string $uri The URI with leading slash after `/api/v1`
      *
      * @param array $request_data Optional request data to send with PUT request
      *
@@ -393,7 +393,7 @@ class ApiClient
      * return $okta_api->delete('/user/'.$group_id);
      * ```
      *
-     * @param string $uri The URI with leading slash after `/api/v4`
+     * @param string $uri The URI with leading slash after `/api/v1`
      *
      * @param array $request_data Optional request data to send with DELETE request
      *
