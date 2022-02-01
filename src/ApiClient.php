@@ -133,7 +133,8 @@ class ApiClient
      * ApiClient, you can pass a different API token as an argument. This
      * method sets the API token based on whether the argument was provided.
      *
-     * @param string|null $api_token
+     * @param string|null $api_token (Optional) Okta API token to use. This will
+     * override the API token defined in the `.env` file.
      * @return void
      */
     protected function setApiToken(?string $api_token) : void
