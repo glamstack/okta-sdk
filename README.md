@@ -88,8 +88,12 @@ See the [API Requests](#api-requests) and [API Responses](#api-responses) sectio
 
 ### Add Composer Package
 
+This package uses [Calendar Versioning](#calendar-versioning).
+
+We recommend always using a specific version in your `composer.json` file and reviewing the [changelog](changelog/) to see the breaking changes in each release before assuming that the latest release is the right choice for your project.
+
 ```bash
-composer require glamstack/okta-sdk
+composer require glamstack/okta-sdk:2.2.1
 ```
 
 > If you are contributing to this package, see [CONTRIBUTING](CONTRIBUTING.md) for instructions on configuring a local composer package with symlinks.
@@ -99,6 +103,32 @@ composer require glamstack/okta-sdk
 ```bash
 php artisan vendor:publish --tag=glamstack-okta
 ```
+
+#### Version upgrades
+
+If you have upgraded to a newer version of the package, you should back up your existing configuration file to avoid your custom configuration being overridden.
+
+```bash
+cp config/glamstack-okta.php config/glamstack-okta.php.bak
+
+php artisan vendor:publish --tag=glamstack-okta
+```
+
+### Calendar Versioning
+
+The GitLab IT Engineering team uses a modified version of [Calendar Versioning (CalVer)](https://calver.org/) instead of [Semantic Versioning (SemVer)](https://semver.org/). CalVer has a YY (Ex. 2021 => 21) but having a version `21.xx` feels unintuitive to us. Since our team started this in 2021, we decided to use the last integer of the year only (2021 => 1.x, 2022 => 2.x, etc).
+
+The version number represents the release date in `vY.M.D` format.
+
+#### Why we don't use semantic versioning
+
+1. We are continuously shipping to `main`/`master`/`production`, so having semantic version numbers is unintuitive for us.
+1. We make breaking changes in most releases, so it does not make sense to iterate through major versions rapidly.
+1. All of our projects need to be able to be updated to a new version during scheduled change windows. We don't maintain any forks or divergent branches. We can update the `composer.json` on each Laravel project that uses the package as the change windows allow without worry about differences and/or breaking changes with "staying up to date with the latest version".
+1. We don't like to debate what to call our release/milestone and whether it's a major, minor, or patch release. We simply write code, write a changelog, and ship it on the day that it's done. The changelog publication date becomes the tagged version number (Ex. `2022-02-01` is `v2.2.1`). We may refer to a bigger version number for larger releases (Ex. `v2.2`), however this is only for monthly milestone planning and canonical purposes only. All code tags include the date (Ex. `v2.2.1`).
+1. This allows us to automate use GitLab CI/CD to automate the version tagging process based on the date the pipeline job runs.
+1. Our packages use underlying packages in your existing Laravel application, so keeping your Laravel application version up-to-date addresses most security concerns.
+
 
 ## Environment Configuration
 
@@ -656,21 +686,21 @@ $okta_api->get('/groups');
 #### Valid API Token
 
 ```json
-[2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzENHYyWivKath4UvZhAAAAt8","rate_limit_remaining":"998","status_code":200} 
+[2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzENHYyWivKath4UvZhAAAAt8","rate_limit_remaining":"998","status_code":200}
 
-[2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzEC100RhpyNJdV3sEiAAABmQ","rate_limit_remaining":"499","status_code":200} 
+[2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzEC100RhpyNJdV3sEiAAABmQ","rate_limit_remaining":"499","status_code":200}
 ```
 
 #### Missing API Token
 
 ```json
-[2022-01-31 23:40:26] local.CRITICAL: The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/glamstack-okta.php`. Without this API token, you will not be able to performed authenticated API calls. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/glamstack-okta.php`. Without this API token, you will not be able to performed authenticated API calls.","connection_key":"prod"} 
+[2022-01-31 23:40:26] local.CRITICAL: The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/glamstack-okta.php`. Without this API token, you will not be able to performed authenticated API calls. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/glamstack-okta.php`. Without this API token, you will not be able to performed authenticated API calls.","connection_key":"prod"}
 ```
 
 #### Invalid API Token
 
 ```json
-[2022-01-31 23:41:01] local.NOTICE: GET 401 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","event_type":"okta-api-response-client-error","message":"GET 401 https://gitlab.okta.com/api/v1/org","okta_request_id":"Yfhzjforta34Ho5ON3SqeQAADlY","okta_error_causes":[],"okta_error_code":"E0000011","okta_error_id":"oaepVpdl1ZQQO-U7Ki-e_-wHQ","okta_error_link":"E0000011","okta_error_summary":"Invalid token provided","rate_limit_remaining":null,"status_code":401} 
+[2022-01-31 23:41:01] local.NOTICE: GET 401 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","event_type":"okta-api-response-client-error","message":"GET 401 https://gitlab.okta.com/api/v1/org","okta_request_id":"Yfhzjforta34Ho5ON3SqeQAADlY","okta_error_causes":[],"okta_error_code":"E0000011","okta_error_id":"oaepVpdl1ZQQO-U7Ki-e_-wHQ","okta_error_link":"E0000011","okta_error_summary":"Invalid token provided","rate_limit_remaining":null,"status_code":401}
 ```
 
 #### ApiClient Construct API Token
@@ -681,23 +711,23 @@ $okta_api->get('/groups');
 ```
 
 ```json
-[2022-01-31 23:42:04] local.NOTICE: The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used. {"event_type":"okta-api-config-override-notice","class":"Glamstack\\Okta\\ApiClient","status_code":"203","message":"The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used.","okta_connection":"prod"} 
+[2022-01-31 23:42:04] local.NOTICE: The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used. {"event_type":"okta-api-config-override-notice","class":"Glamstack\\Okta\\ApiClient","status_code":"203","message":"The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used.","okta_connection":"prod"}
 
-[2022-01-31 23:42:04] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzzDq5PIe70D1-C8HRHwAACdg","rate_limit_remaining":"999","status_code":200} 
+[2022-01-31 23:42:04] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzzDq5PIe70D1-C8HRHwAACdg","rate_limit_remaining":"999","status_code":200}
 
-[2022-01-31 23:42:05] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzzK6LrJwm1XbvpcPnGwAAA6g","rate_limit_remaining":"499","status_code":200} 
+[2022-01-31 23:42:05] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzzK6LrJwm1XbvpcPnGwAAA6g","rate_limit_remaining":"499","status_code":200}
 ```
 
 #### Missing Connection Configuration
 
 ```json
-[2022-01-31 23:43:03] local.CRITICAL: The Okta connection key is not defined in `config/glamstack-okta.php` connections array. Without this array config, there is no URL or API token to connect with. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The Okta connection key is not defined in `config/glamstack-okta.php` connections array. Without this array config, there is no URL or API token to connect with.","connection_key":"test"} 
+[2022-01-31 23:43:03] local.CRITICAL: The Okta connection key is not defined in `config/glamstack-okta.php` connections array. Without this array config, there is no URL or API token to connect with. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The Okta connection key is not defined in `config/glamstack-okta.php` connections array. Without this array config, there is no URL or API token to connect with.","connection_key":"test"}
 ```
 
 #### Missing Base URL
 
 ```json
-[2022-01-31 23:44:04] local.CRITICAL: The Base URL for this Okta connection key is not defined in `config/glamstack-okta.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The Base URL for this Okta connection key is not defined in `config/glamstack-okta.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with.","connection_key":"test"} 
+[2022-01-31 23:44:04] local.CRITICAL: The Base URL for this Okta connection key is not defined in `config/glamstack-okta.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The Base URL for this Okta connection key is not defined in `config/glamstack-okta.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with.","connection_key":"test"}
 ```
 
 ## Issue Tracking and Bug Reports
