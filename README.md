@@ -124,7 +124,7 @@ https://mycompany.oktapreview.com
 
 If you have a free [Okta developer account](https://developer.okta.com/signup/), you can configure the Base URL and API token in the `dev` key.
 
-If you have the rare use case where you have additional Okta instances that you connect to beyond what is pre-configured below, you can add an additional connection keys below with the name of your choice and create new variables for the Base URL and API token using the other connections as examples.
+If you have the rare use case where you have additional Okta instances that you connect to beyond what is pre-configured below, you can add additional connection keys below with the name of your choice and create new variables for the Base URL and API token using the other connections as examples.
 
 To get started, add the following variables to your `.env` file. You can add these anywhere in the file on a new line, or add to the bottom of the file (your choice). Be sure to replace `mycompany` with your own URL.
 
@@ -272,7 +272,7 @@ Do not add your API token to the `config/glamstack-okta.php` file to avoid commi
 
 All API tokens should be defined in the `.env` file which is included in `.gitignore` and not committed to your repository.
 
-It is a recommended to store a copy of each API token in your preferred password manager (ex. 1Password, LastPass, etc.) and/or secrets vault (ex. HashiCorp Vault, Ansible, etc.).
+It is recommended to store a copy of each API token in your preferred password manager (ex. 1Password, LastPass, etc.) and/or secrets vault (ex. HashiCorp Vault, Ansible, etc.).
 
 ### API Token Permissions
 
@@ -306,7 +306,7 @@ You can customize the `.env` variable names as needed. The SDK uses the values f
 ],
 ```
 
-You simply need to provide the connection key when invoking the SDK, and you may need to store the connection keys in your application's database for dynamically rendered pages.
+You simply need to provide the connection key when invoking the SDK.
 
 ```php
 $okta_api = new \Glamstack\Okta\ApiClient('prod_scope1');
@@ -632,7 +632,7 @@ $group->status->code;
 
 ## Error Handling
 
-The HTTP status code for the API response is included in each log entry in the message and in the JSON `status_code`. Any internal SDK errors also include an equivalent status code depending on the type of error. The `message` includes the SDK friendly message. If an exception is thrown, the `reference`
+The HTTP status code for the API response is included in each log entry in the message and in the JSON `status_code`. Any internal SDK errors also include an equivalent status code depending on the type of error. The `message` includes the SDK friendly message.
 
 If a `5xx` error is returned from the API, the `ApiClient` `handleException` method will return a response.
 
