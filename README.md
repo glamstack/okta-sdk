@@ -124,7 +124,7 @@ https://mycompany.oktapreview.com
 
 If you have a free [Okta developer account](https://developer.okta.com/signup/), you can configure the Base URL and API token in the `dev` key.
 
-If you have the rare use case where you have additional Okta instances that you connect to beyond what is pre-configured below, you can add an additional connection keys below with the name of your choice and create new variables for the Base URL and API token using the other instances as examples.
+If you have the rare use case where you have additional Okta instances that you connect to beyond what is pre-configured below, you can add an additional connection keys below with the name of your choice and create new variables for the Base URL and API token using the other connections as examples.
 
 To get started, add the following variables to your `.env` file. You can add these anywhere in the file on a new line, or add to the bottom of the file (your choice). Be sure to replace `mycompany` with your own URL.
 
@@ -262,7 +262,7 @@ You can repeat these configuration steps to customize any of your connection key
 
 ### No Shared Tokens
 
-Don't use an API token that you have already created for another purpose. You should generate a new Access Token for each use case.
+Don't use an API token that you have already created for another purpose. You should generate a new API Token for each use case.
 
 This is helpful during security incidents when a key needs to be revoked on a compromised system and you don't want other systems that use the same user or service account to be affected since they use a different key that wasn't revoked.
 
@@ -282,7 +282,7 @@ Credit: [Okta Documentation - Create an API Token](https://developer.okta.com/do
 
 #### Least Privilege
 
-If you need to use different tokens for least privilege security reasons, you can customize `config/glamstack-okta.php` to add the same Okta instance multiple times with different connection keys using any names that fit your needs (ex. `prod_scope1`, `prod_scope2`, `prod_scope3`.
+If you need to use different API keys for least privilege security reasons, you can customize `config/glamstack-okta.php` to add the same Okta Base URL multiple times with different connection keys using any names that fit your needs (ex. `prod_scope1`, `prod_scope2`, `prod_scope3`.
 
 You can customize the `.env` variable names as needed. The SDK uses the values from the `config/glamstack-okta.php` file and does not use any `.env` variables directly.
 
@@ -306,11 +306,11 @@ You can customize the `.env` variable names as needed. The SDK uses the values f
 ],
 ```
 
-You simply need to provide the instance key when invoking the SDK, and you may need to store the connection keys in your application's database for dynamically rendered pages.
+You simply need to provide the connection key when invoking the SDK, and you may need to store the connection keys in your application's database for dynamically rendered pages.
 
 ```php
 $okta_api = new \Glamstack\Okta\ApiClient('prod_scope1');
-$groups = $gitlab_api->get('/groups')->object();
+$groups = $okta_api->get('/groups')->object();
 ```
 
 Alternatively, you can provide a different API key when initializing the service using the second argument. The API token from `config/glamstack-okta.php` is used if the second argument is not provided. This is helpful if your API tokens are stored in your database and are not hard coded into your `.env` file.
@@ -321,7 +321,7 @@ Alternatively, you can provide a different API key when initializing the service
 $service_account = App\Models\OktaServiceAccount::where('id', $id)->firstOrFail();
 $api_token = decrypt($service_account->api_token);
 
-// Use the SDK to connect using your access token.
+// Use the SDK to connect using your API token.
 $okta_api = new \Glamstack\Okta\ApiClient('prod', $api_token);
 $groups = $okta_api->get('/groups')->object();
 ```
@@ -644,16 +644,16 @@ See the [Okta API error codes documentation](https://developer.okta.com/docs/ref
 
 > The output of error messages is shown in the `README` to allow search engines to index these messages for developer debugging support. Any 5xx error messages will be returned as as `Symfony\Component\HttpKernel\Exception\HttpException` or configuration errors, including any errors in the `__construct()` method.
 
-### Instance Configuration and Authentication
+### Connection Configuration and Authentication
 
-When the `ApiClient` class is invoked for the first time, an API connection test is performed to the `/org` endpoint of the Okta instance. This endpoint requires authentication, so this validates whether the Access Token is valid.
+When the `ApiClient` class is invoked for the first time, an API connection test is performed to the `/org` endpoint of the Okta connection. This endpoint requires authentication, so this validates whether the API Token is valid.
 
 ```php
 $okta_api = new \Glamstack\Okta\ApiClient('prod');
-$okta_api->get('/groups/32589035');
+$okta_api->get('/groups');
 ```
 
-#### Valid Access Token
+#### Valid API Token
 
 ```json
 [2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzENHYyWivKath4UvZhAAAAt8","rate_limit_remaining":"998","status_code":200} 
@@ -661,19 +661,19 @@ $okta_api->get('/groups/32589035');
 [2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzEC100RhpyNJdV3sEiAAABmQ","rate_limit_remaining":"499","status_code":200} 
 ```
 
-#### Missing Access Token
+#### Missing API Token
 
 ```json
 [2022-01-31 23:40:26] local.CRITICAL: The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/glamstack-okta.php`. Without this API token, you will not be able to performed authenticated API calls. {"event_type":"okta-api-config-missing-error","class":"Glamstack\\Okta\\ApiClient","status_code":"501","message":"The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/glamstack-okta.php`. Without this API token, you will not be able to performed authenticated API calls.","connection_key":"prod"} 
 ```
 
-#### Invalid Access Token
+#### Invalid API Token
 
 ```json
 [2022-01-31 23:41:01] local.NOTICE: GET 401 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"Glamstack\\Okta\\ApiClient","connection_key":"prod","event_type":"okta-api-response-client-error","message":"GET 401 https://gitlab.okta.com/api/v1/org","okta_request_id":"Yfhzjforta34Ho5ON3SqeQAADlY","okta_error_causes":[],"okta_error_code":"E0000011","okta_error_id":"oaepVpdl1ZQQO-U7Ki-e_-wHQ","okta_error_link":"E0000011","okta_error_summary":"Invalid token provided","rate_limit_remaining":null,"status_code":401} 
 ```
 
-#### ApiClient Construct Access Token
+#### ApiClient Construct API Token
 
 ```php
 $okta_api = new \Glamstack\Okta\ApiClient('prod', '00fJq-A1b2C3d4E5f6G7h8I9J0-Kl-mNoPqRsTuVwx');
