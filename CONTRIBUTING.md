@@ -49,7 +49,7 @@ Update the `composer.json` file in your testing application (not the package) to
 "autoload": {
     "psr-4": {
         "App\\": "app/",
-        "Glamstack\\Gitlab\\": "packages/glamstack/okta-sdk/src",
+        "Glamstack\\Okta\\": "packages/glamstack/okta-sdk/src",
     }
 },
 ```
