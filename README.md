@@ -122,13 +122,11 @@ The version number represents the release date in `vY.M.D` format.
 
 #### Why we don't use semantic versioning
 
-1. We are continuously shipping to `main`/`master`/`production`, so having semantic version numbers is unintuitive for us.
-1. We make breaking changes in most releases, so it does not make sense to iterate through major versions rapidly.
-1. All of our projects need to be able to be updated to a new version during scheduled change windows. We don't maintain any forks or divergent branches. We can update the `composer.json` on each Laravel project that uses the package as the change windows allow without worry about differences and/or breaking changes with "staying up to date with the latest version".
-1. We don't like to debate what to call our release/milestone and whether it's a major, minor, or patch release. We simply write code, write a changelog, and ship it on the day that it's done. The changelog publication date becomes the tagged version number (Ex. `2022-02-01` is `v2.2.1`). We may refer to a bigger version number for larger releases (Ex. `v2.2`), however this is only for monthly milestone planning and canonical purposes only. All code tags include the date (Ex. `v2.2.1`).
-1. This allows us to automate use GitLab CI/CD to automate the version tagging process based on the date the pipeline job runs.
+1. We are continuously shipping to `main`/`master`/`production` and make breaking changes in most releases, so having semantic backwards-compatible version numbers is unintuitive for us.
+1. We don't like to debate what to call our release/milestone and whether it's a major, minor, or patch release. We simply write code, write a changelog, and ship it on the day that it's done. The changelog publication date becomes the tagged version number (Ex. `2022-02-01` is `v2.2.1`). We may refer to a bigger version number for larger releases (Ex. `v2.2`), however this is only for monthly milestone planning and canonical purposes only. All code tags include the day of release (Ex. `v2.2.1`).
+1. This allows us to automate using GitLab CI/CD to automate the version tagging process based on the date the pipeline job runs.
+1. We update each of our project `composer.json` files that use this package to specific or new version numbers during scheduled change windows without worrying about differences and/or breaking changes with "staying up to date with the latest version". We don't maintain any forks or divergent branches.
 1. Our packages use underlying packages in your existing Laravel application, so keeping your Laravel application version up-to-date addresses most security concerns.
-
 
 ## Environment Configuration
 
