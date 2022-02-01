@@ -17,7 +17,7 @@ class ApiClient
     private ?string $api_token;
     private ?string $base_url;
     private array $connection_config;
-    private ?string $connection_key;
+    private string $connection_key;
     private array $request_headers;
 
     public function __construct(
