@@ -22,7 +22,8 @@ class ApiClient
 
     public function __construct(
         string $connection_key = null,
-        string $api_token = null
+        string $api_token = null,
+        string $base_url = null,
     ) {
         // Set the class connection_key variable.
         $this->setConnectionKey($connection_key);
