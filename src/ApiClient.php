@@ -31,11 +31,11 @@ class ApiClient
         // Set the class connection_configuration variable
         $this->setConnectionConfig();
 
-        // Set the class base_url variable.
-        $this->setBaseUrl();
-
-        // Set the class api_scopes variable.
+        // Set the class api_scopes variable
         $this->setApiToken($api_token);
+
+        // Set the class base_url variable
+        $this->setBaseUrl($base_url);
 
         // Set request headers
         $this->setRequestHeaders();
