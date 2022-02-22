@@ -103,11 +103,29 @@ class ApiClient
      *
      * @return void
      */
-    protected function setBaseUrl() : void
+    protected function setBaseUrl(?string $base_url) : void
     {
-        if ($this->connection_config['base_url'] != null) {
+        if ($base_url == null && $this->connection_config['base_url'] != null) {
             $this->base_url = $this->connection_config['base_url'] . '/api/v' . self::API_VERSION;
-        } else {
+        } elseif($base_url != null){
+            $this->base_url = $base_url;
+
+            $info_message = 'The Okta base URL for these API calls is using an ' .
+                'URL that was provided in the ApiClient construct ' .
+                'method. The base URL that might be configured in the ' .
+                '`.env` file is not being used.';
+
+            Log::stack((array) config('glamstack-okta.auth.log_channels'))
+                ->notice($error_message, [
+                    'event_type' => 'okta-api-config-override-notice',
+                    'class' => get_class(),
+                    'status_code' => '203',
+                    'message' => $info_message,
+                    'connection_key' => $this->connection_key,
+                ]);
+        }
+        
+        else {
             $error_message = 'The Base URL for this Okta connection key ' .
                 'is not defined in `config/glamstack-okta.php` or `.env` file. ' .
                 'Without this configuration (ex. `https://mycompany.okta.com`), ' .
