@@ -65,7 +65,20 @@ class ApiClient
         $this->setConnectionConfig();
     }
 
-    protected function setCustomConfiguration(array $connection_config)
+    /**
+     * Set the configuration utilizing the `connection_config`
+     *
+     * This method will utilize the `connection_config` array provided in the
+     * construct method. The `connection_config` array keys will have to match
+     * the `REQUIRED_CONFIG_PARAMETERS` array
+     *
+     * @param array $connection_config
+     *      Array that contains the required parameters for the connection
+     *      configuration
+     *
+     * @return void
+     */
+    protected function setCustomConfiguration(array $connection_config): void
     {
         // Validate that `$connection_config` has all required parameters
         $this->validateConnectionConfigArray($connection_config);
