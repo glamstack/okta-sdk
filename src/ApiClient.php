@@ -23,8 +23,7 @@ class ApiClient
 
     public function __construct(
         string $connection_key = null,
-        string $api_token = null,
-        string $base_url = null,
+        array $connection_config = []
     ) {
         // Set the class connection_key variable.
         $this->setConnectionKey($connection_key);
@@ -33,10 +32,10 @@ class ApiClient
         $this->setConnectionConfig();
 
         // Set the class api_scopes variable
-        $this->setApiToken($api_token);
+        $this->setApiToken();
 
         // Set the class base_url variable
-        $this->setBaseUrl($base_url);
+        $this->setBaseUrl();
 
         // Set request headers
         $this->setRequestHeaders();
