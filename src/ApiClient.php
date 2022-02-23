@@ -66,6 +66,49 @@ class ApiClient
         $this->setConnectionConfig($connection_config);
     }
 
+    protected function validateConnectionConfigArray(array $connection_config)
+    {
+        if (count(self::REQUIRED_CONFIG_PARAMETERS) == count($connection_config)) {
+            foreach (self::REQUIRED_CONFIG_PARAMETERS as $parameter) {
+                if (!array_key_exists($parameter, $connection_config)) {
+                    $error_message = 'The Okta ' . $parameter . ' is not defined ' .
+                        'in the ApiClient construct conneciton_config array provided. ' .
+                        'This is a required parameter to be passed in not using the ' .
+                        'configuration file and connection_key initialization method.';
+
+                    Log::stack((array) config('glamstack-okta.auth.log_channels'))
+                        ->critical(
+                            $error_message,
+                            [
+                                'event_type' => 'okta-api-config-missing-error',
+                                'class' => get_class(),
+                                'status_code' => '501',
+                                'message' => $error_message,
+                                'connection_config' => $connection_config,
+                            ]
+                        );
+                }
+            }
+        } else {
+            $error_message = 'The Okta SDK connection_config array provided ' .
+                'in the ApiClient construct connection_config array ' .
+                'size should be ' . count(self::REQUIRED_CONFIG_PARAMETERS) .
+                'but ' . count($connection_config) . ' array keys were provided.';
+
+            Log::stack((array) config('glamstack-okta.auth.log_channels'))
+                ->critical(
+                    $error_message,
+                    [
+                        'event_type' => 'okta-api-config-missing-error',
+                        'class' => get_class(),
+                        'status_code' => '501',
+                        'message' => $error_message,
+                        'connection_config' => $connection_config,
+                    ]
+                );
+        }
+    }
+
     /**
      * Set the connection_key class property variable
      *
