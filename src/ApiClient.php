@@ -119,7 +119,7 @@ class ApiClient
      *
      * @return void
      */
-    protected function setConnectionKey(?string $connection_key) : void
+    protected function setConnectionKey(string $connection_key = null): void
     {
         if ($connection_key == null) {
             $this->connection_key = config('glamstack-okta.auth.default_connection');
