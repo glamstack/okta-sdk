@@ -138,10 +138,15 @@ class ApiClient
      *
      * @return void
      */
-    protected function setConnectionConfig(): void
+    protected function setConnectionConfig(array $custom_configuration = []): void
     {
-        if (array_key_exists($this->connection_key, config('glamstack-okta.connections'))) {
+        if (
+            array_key_exists($this->connection_key, config('glamstack-okta.connections'))
+            && empty($custom_configuration)
+        ) {
             $this->connection_config = config('glamstack-okta.connections.' . $this->connection_key);
+        } elseif ($custom_configuration) {
+            $this->connection_config = $custom_configuration;
         } else {
             $error_message = 'The Okta connection key is not defined in ' .
                 '`config/glamstack-okta.php` connections array. Without this ' .
