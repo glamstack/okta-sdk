@@ -25,11 +25,11 @@ class ApiClient
         string $connection_key = null,
         array $connection_config = []
     ) {
-        // Set the class connection_key variable.
-        $this->setConnectionKey($connection_key);
-
-        // Set the class connection_configuration variable
-        $this->setConnectionConfig();
+        if (empty($connection_config)) {
+            $this->setConnectionKeyConfiguration($connection_key);
+        } else {
+            $this->setCustomConfiguration($connection_config);
+        }
 
         // Set the class api_scopes variable
         $this->setApiToken();
