@@ -44,6 +44,15 @@ class ApiClient
         $this->testConnection();
     }
 
+    protected function setConnectionKeyConfiguration(string $connection_key)
+    {
+        // Set the class connection_key variable.
+        $this->setConnectionKey($connection_key);
+
+        // Set the class connection_configuration variable
+        $this->setConnectionConfig();
+    }
+
     /**
      * Set the connection_key class property variable
      *
