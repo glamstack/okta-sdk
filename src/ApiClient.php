@@ -53,6 +53,19 @@ class ApiClient
         $this->setConnectionConfig();
     }
 
+    protected function setCustomConfiguration(array $connection_config)
+    {
+        // Validate that `$connection_config` has all required parameters
+        $this->validateConnectionConfigArray($connection_config);
+
+        // Set the connection key to `custom` and will be ignored for remainder
+        // of the SDK use
+        $this->setConnectionKey('custom');
+
+        // Set the connection_config array with the provided array
+        $this->setConnectionConfig($connection_config);
+    }
+
     /**
      * Set the connection_key class property variable
      *
