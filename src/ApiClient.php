@@ -103,7 +103,7 @@ class ApiClient
                         'class' => get_class(),
                         'status_code' => '501',
                         'message' => $error_message,
-                        'connection_config' => $connection_config,
+                        'connection_url' => $connection_config['base_url'],
                     ]
                 );
         }
