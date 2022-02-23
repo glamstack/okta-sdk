@@ -51,12 +51,12 @@ class ApiClient
      * method. The `connection_key` will correspond to a `connection` in the
      * configuration file.
      *
-     * @param string $connection_key
+     * @param ?string $connection_key
      *      The connection key to use for configuration.
      *
      * @return void
      */
-    protected function setConnectionKeyConfiguration(string $connection_key): void
+    protected function setConnectionKeyConfiguration(?string $connection_key): void
     {
         // Set the class connection_key variable.
         $this->setConnectionKey($connection_key);
