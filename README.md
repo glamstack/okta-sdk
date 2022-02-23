@@ -21,6 +21,8 @@ The Okta SDK is an open source [Composer](https://getcomposer.org/) package crea
 
 The URL of your Okta instance (ex. `https://mycompany.okta.com`) and API Token is specified in `config/glamstack-okta.php` using variables inherited from your `.env` file.
 
+The `config/glamstack-okta.php` configuration file is able to be overridden by passing in an array to the `connection_config` parameter during initialization of the SDK. See [Required Connection Configuration Parameters](#required-connection-configuration-parameters)
+
 The package is not intended to provide functions for every endpoint in the Okta API.
 
 We have taken a simpler approach by providing a universal `ApiClient` that can perform `GET`, `POST`, `PUT`, and `DELETE` requests to any endpoint that you find in the [Okta API documentation](https://developer.okta.com/docs/reference/core-okta-api/) and handles the API response, error handling, and pagination for you.
@@ -103,6 +105,16 @@ composer require glamstack/okta-sdk:2.2.1
 ```bash
 php artisan vendor:publish --tag=glamstack-okta
 ```
+
+### Required Connection Configuration Parameters
+
+If not utilizing the `config/glamstack-okta.php` configuration file the following parameters are required to be set in the `connection_config` array of the SDK initialization.
+
+| Required Parameters |
+|---------------------|
+| `base_url`          |
+| `api_token`         |
+| `log_channels`      |
 
 #### Version upgrades
 
