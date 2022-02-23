@@ -208,31 +208,11 @@ class ApiClient
      * override the API token defined in the `.env` file.
      * @return void
      */
-    protected function setApiToken(?string $api_token) : void
+    protected function setApiToken(): void
     {
         // If API token was not provided in construct, use config file value
-        if ($api_token == null && $this->connection_config['api_token'] != null) {
+        if ($this->connection_config['api_token'] != null) {
             $this->api_token = $this->connection_config['api_token'];
-
-        // If API token was provided, override config file value
-        } elseif ($api_token != null) {
-            $this->api_token = $api_token;
-
-            $info_message = 'The Okta API token for these API calls is using an ' .
-                'API token that was provided in the ApiClient construct ' .
-                'method. The API token that might be configured in the ' .
-                '`.env` file is not being used.';
-
-            Log::stack((array) config('glamstack-okta.auth.log_channels'))
-                ->notice($info_message, [
-                    'event_type' => 'okta-api-config-override-notice',
-                    'class' => get_class(),
-                    'status_code' => '203',
-                    'message' =>  $info_message,
-                    'okta_connection' => $this->connection_key,
-                ]);
-
-        // If API token is not defined, abort with an error message
         } else {
             $error_message = 'The API token for this Okta connection key ' .
                 'is not defined in your `.env` file. The variable name for the ' .
