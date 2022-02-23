@@ -177,10 +177,7 @@ class ApiClient
      */
     protected function setConnectionConfig(array $custom_configuration = []): void
     {
-        if (
-            array_key_exists($this->connection_key, config('glamstack-okta.connections'))
-            && empty($custom_configuration)
-        ) {
+        if (array_key_exists($this->connection_key, config('glamstack-okta.connections')) && empty($custom_configuration)) {
             $this->connection_config = config('glamstack-okta.connections.' . $this->connection_key);
         } elseif ($custom_configuration) {
             $this->connection_config = $custom_configuration;
@@ -241,8 +238,6 @@ class ApiClient
      * ApiClient, you can pass a different API token as an argument. This
      * method sets the API token based on whether the argument was provided.
      *
-     * @param string|null $api_token (Optional) Okta API token to use. This will
-     * override the API token defined in the `.env` file.
      * @return void
      */
     protected function setApiToken(): void
