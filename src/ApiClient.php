@@ -91,6 +91,19 @@ class ApiClient
         $this->setConnectionConfig($connection_config);
     }
 
+    /**
+     * Validate that array keys in `REQUIRED_CONFIG_PARAMETERS` exists in the
+     * `connection_config`
+     *
+     * This method will loop through each of the required parameters in 
+     * `REQUIRED_CONFIG_PARAMETERS` and verify that each of them are contained
+     * in the provided `connection_config` array. If there is a key missing
+     * an error will be logged.
+     *
+     * @param array $connection_config
+     *      The connection configuration array provided to the `construct` 
+     *      method.
+     */
     protected function validateConnectionConfigArray(array $connection_config)
     {
        foreach (self::REQUIRED_CONFIG_PARAMETERS as $parameter) {
