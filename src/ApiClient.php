@@ -237,7 +237,7 @@ class ApiClient
      *
      * @return void
      */
-    public function setRequestHeaders() : void
+    public function setRequestHeaders(): void
     {
         // Get Laravel and PHP Version
         $laravel = 'Laravel/' . app()->version();
@@ -273,7 +273,7 @@ class ApiClient
      *
      * @return void
      */
-    public function testConnection() : void
+    public function testConnection(): void
     {
         // API call to get Okta organization details (a simple API endpoint)
         // Logging for the request is handled by the get() method.
@@ -282,7 +282,7 @@ class ApiClient
         if ($response->status->ok == false) {
             if (property_exists($response->object, 'errorCode')) {
                 $error_message = 'Okta API Error ' . $response->object->errorCode . ' - ' .
-                $response->object->errorSummary;
+                    $response->object->errorSummary;
             } else {
                 $error_message = 'The Okta API connection test failed for an unknown reason. See logs for details.';
             }
@@ -529,8 +529,6 @@ class ApiClient
             // If array has multiple keys, leave as array
             if (count($header_value) > 1) {
                 $headers[$header_key] = $header_value;
-
-            // If array has a single key, convert to a string
             } else {
                 $headers[$header_key] = $header_value[0];
             }
