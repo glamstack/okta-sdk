@@ -44,7 +44,19 @@ class ApiClient
         $this->testConnection();
     }
 
-    protected function setConnectionKeyConfiguration(string $connection_key)
+    /**
+     * Set the configuration utilizing the `connection_key`
+     *
+     * This method will utilize the `connection_key` provided in the construct
+     * method. The `connection_key` will correspond to a `connection` in the
+     * configuration file.
+     *
+     * @param string $connection_key
+     *      The connection key to use for configuration.
+     *
+     * @return void
+     */
+    protected function setConnectionKeyConfiguration(string $connection_key): void
     {
         // Set the class connection_key variable.
         $this->setConnectionKey($connection_key);
