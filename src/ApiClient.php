@@ -13,6 +13,7 @@ class ApiClient
     use ResponseLog;
 
     const API_VERSION = 1;
+    const REQUIRED_CONFIG_PARAMETERS = ['base_url', 'api_token', 'log_channels'];
 
     private string $api_token;
     private string $base_url;
