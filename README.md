@@ -21,7 +21,7 @@ The Okta SDK is an open source [Composer](https://getcomposer.org/) package crea
 
 The URL of your Okta instance (ex. `https://mycompany.okta.com`) and API Token is specified in `config/glamstack-okta.php` using variables inherited from your `.env` file.
 
-The `config/glamstack-okta.php` configuration file is able to be overridden by passing in an array to the `connection_config` parameter during initialization of the SDK. See [Required Connection Configuration Parameters](#required-connection-configuration-parameters)
+If your connection configuration is stored in your database and needs to be provided dynamically, the `config/glamstack-okta.php` configuration file can be overridden by passing in an array to the `connection_config` parameter during initialization of the SDK. See [Dynamic Variable Connection per API Call](#dynamic-variable-connection-per-api-call) to learn more.
 
 The package is not intended to provide functions for every endpoint in the Okta API.
 
@@ -105,16 +105,6 @@ composer require glamstack/okta-sdk:2.2.1
 ```bash
 php artisan vendor:publish --tag=glamstack-okta
 ```
-
-### Required Connection Configuration Parameters
-
-If not utilizing the `config/glamstack-okta.php` configuration file the following parameters are required to be set in the `connection_config` array of the SDK initialization.
-
-| Required Parameters |
-|---------------------|
-| `base_url`          |
-| `api_token`         |
-| `log_channels`      |
 
 #### Version upgrades
 
@@ -220,6 +210,37 @@ $groups = $okta_api->get('/groups');
 ```
 
 > If you encounter errors, ensure that the API token has been added to you `.env` file in the `OKTA_{CONNECTION_KEY}_API_TOKEN` variable. Keep in mind that Okta API tokens automatically expire after 30 days of inactivity, so it is possible that you will have not run `dev` or `preview` API calls in awhile and will receive an unauthorized error message.
+
+### Dynamic Variable Connection per API Call
+
+If not utilizing a connection key in the `config/glamstack-okta.php` configuration file, you can pass an array as the second argument with a custom connection configuration. This should only be used when using dynamic variables that are stored in your database.
+
+```php
+// Initialize the SDK
+$okta_api = new \Glamstack\Okta\ApiClient(null, [
+    'base_url' => 'https://mycompany.okta.com',
+    'api_token' => '00fJq-ABCDEFGhijklmn0pQrsTu-Vw-xyZ12345678'
+    'log_channels' => ['single', 'glamstack-okta']
+]);
+```
+
+Here is an excerpt of how we use the SaaSInstance model in GitLab Access Manager to store these records and provide them to the SDK. You can choose whether to provide dynamic log channels as part of your application logic or hard code the channels that you have configured in your application that uses the SDK.
+
+```php
+// The $saas_instance_id is provided dynamically in the controller or service request
+
+// Get Saas Instance
+$saas_instance = \App\Models\Saas\SaasInstance::query()
+    ->where('id', $saas_instance_id)
+    ->firstOrFail();
+
+// Initialize the SDK
+$okta_api = new \Glamstack\Okta\ApiClient(null, [
+    'base_url' => $saas_instance->api_base_url,
+    'api_token' => decrypt($saas_instance->api_token),
+    'log_channels' => ['single', 'glamstack-okta']
+]);
+```
 
 ### Logging Configuration
 
