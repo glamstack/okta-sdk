@@ -1,6 +1,6 @@
 <?php
 
-namespace Glamstack\Okta;
+namespace GitlabIt\Okta;
 
 use Illuminate\Support\ServiceProvider;
 
