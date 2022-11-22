@@ -48,7 +48,7 @@ Update the `composer.json` file in your testing application (not the package) to
 "autoload": {
     "psr-4": {
         "App\\": "app/",
-        "Glamstack\\Okta\\": "packages/gitlab-it/okta-sdk/src",
+        "GitlabIt\\Okta\\": "packages/gitlab-it/okta-sdk/src",
     }
 },
 ```
@@ -65,7 +65,7 @@ composer config repositories.okta-sdk '{"type": "path", "url": "packages/gitlab-
 composer require gitlab-it/okta-sdk:dev-main
 
 # Package operations: 1 install, 0 updates, 0 removals
-#  - Installing glamstack/okta-sdk (dev-main): Symlinking from packages/glamstack/okta-sdk
+#  - Installing gitlab-it/okta-sdk (dev-main): Symlinking from packages/gitlab-it/okta-sdk
 ```
 
 ### Validation and Config Copy
