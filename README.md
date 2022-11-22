@@ -698,6 +698,8 @@ $group->object;
 }
 ```
 
+#### Accessing single record values
+
 You can access these variables using object notation. This is the most common use case for handling API responses.
 
 ```php
@@ -709,6 +711,8 @@ dd($group->name);
 ```
 Hack the Planet Engineers
 ```
+
+#### Looping through records
 
 If you have an array of multiple objects, you can loop through the records.
 
@@ -723,6 +727,37 @@ foreach($groups as $group) {
 
 ```
 Hack the Planet Engineers
+```
+
+#### Caching responses
+
+The SDK does not use caching to avoid any constraints with you being able to control which endpoints you cache.
+
+You can wrap an endpoint in a cache facade when making an API call. You can learn more in the [Laravel Cache](https://laravel.com/docs/9.x/cache) documentation.
+
+```php
+use Illuminate\Support\Facades\Cache;
+
+$okta_api = new \GitlabIt\Okta\ApiClient($connection_key);
+
+$groups = Cache::remember('okta_groups', now()->addHours(12), function () use ($okta_api) {
+    return $okta_api->get('/groups')->object;
+});
+
+foreach($groups as $group) {
+    dd($group->name);
+}
+```
+
+When getting a specific ID or passing additional arguments, be sure to pass variables into `use($var1, $var2)`.
+
+```php
+$okta_api = new \GitlabIt\Okta\ApiClient($connection_key);
+$group_id = '0oa1ab2c3D4E5F6G7h8i';
+
+$groups = Cache::remember('okta_group_' . $group_id, now()->addHours(12), function () use ($okta_api, $group_id) {
+    return $okta_api->get('/groups/' . $group_id)->object;
+});
 ```
 
 #### API Response Status
