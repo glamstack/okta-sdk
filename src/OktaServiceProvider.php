@@ -1,6 +1,6 @@
 <?php
 
-namespace Glamstack\Okta;
+namespace GitlabIt\Okta;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -8,7 +8,7 @@ class OktaServiceProvider extends ServiceProvider
 {
     // use ServiceBindings;
 
-    public function boot() : void
+    public function boot(): void
     {
         $this->bootRoutes();
     }
@@ -29,9 +29,8 @@ class OktaServiceProvider extends ServiceProvider
         //$this->loadRoutesFrom(__DIR__.'/Routes/console.php');
     }
 
-    protected function registerConfig() : void
+    protected function registerConfig(): void
     {
-
         //
         // Merge config file into application config
         //
@@ -39,8 +38,8 @@ class OktaServiceProvider extends ServiceProvider
         // their own values in the application config file.
         //
         $this->mergeConfigFrom(
-            __DIR__.'/Config/glamstack-okta.php',
-            'glamstack-okta'
+            __DIR__.'/Config/okta-sdk.php',
+            'okta-sdk'
         );
 
         if (! $this->app->runningInConsole()) {
@@ -51,11 +50,11 @@ class OktaServiceProvider extends ServiceProvider
         // Publish config file to application
         //
         // Once the `php artisan vendor::publish` command is run, you can use
-        // the configuration file values `$value = config('glamstack-okta.option');`
+        // the configuration file values `$value = config('okta-sdk.option');`
         //
         $this->publishes([
-            __DIR__.'/Config/glamstack-okta.php' => config_path('glamstack-okta.php'),
-        ], 'glamstack-okta');
+            __DIR__.'/Config/okta-sdk.php' => config_path('okta-sdk.php'),
+        ], 'okta-sdk');
     }
 
     /**

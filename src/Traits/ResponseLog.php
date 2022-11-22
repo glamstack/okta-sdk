@@ -1,6 +1,6 @@
 <?php
 
-namespace Glamstack\Okta\Traits;
+namespace GitlabIt\Okta\Traits;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -24,7 +24,7 @@ trait ResponseLog
      *
      * @return void
      */
-    public function logResponse(string $method, string $url, object $response) : void
+    public function logResponse(string $method, string $url, object $response): void
     {
         // Status code log messages (2xx, 4xx, 5xx)
         if ($response->status->ok == true) {
@@ -56,7 +56,7 @@ trait ResponseLog
      *
      * @return void
      */
-    public function logInfo(string $method, string $url, object $response) : void
+    public function logInfo(string $method, string $url, object $response): void
     {
         $message = Str::upper($method).' '.$response->status->code.' '.$url;
 
@@ -88,7 +88,7 @@ trait ResponseLog
      *
      * @return void
      */
-    public function logClientError(string $method, string $url, object $response) : void
+    public function logClientError(string $method, string $url, object $response): void
     {
         $message = Str::upper($method).' '.$response->status->code.' '.$url;
 
@@ -125,7 +125,7 @@ trait ResponseLog
      *
      * @return void
      */
-    public function logServerError(string $method, string $url, object $response) : void
+    public function logServerError(string $method, string $url, object $response): void
     {
         $message = Str::upper($method) . ' ' . $response->status->code . ' ' . $url;
 
@@ -163,7 +163,7 @@ trait ResponseLog
      *
      * @return void
      */
-    public function warningLogIfRateLimitApproaching(string $method, string $url, object $response) : void
+    public function warningLogIfRateLimitApproaching(string $method, string $url, object $response): void
     {
         if (array_key_exists('x-rate-limit-remaining', $response->headers)) {
             // Calculate percentage of rate limit remaining
@@ -212,8 +212,7 @@ trait ResponseLog
         string $method,
         string $url,
         object $response
-    ) : void
-    {
+    ): void {
         if (array_key_exists('x-rate-limit-remaining', $response->headers)) {
             // If count remaining is 1 or zero, add a error log
             if ($response->headers['x-rate-limit-remaining'] <= 1) {

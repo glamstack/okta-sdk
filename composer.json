@@ -1,7 +1,7 @@
 {
-    "name": "glamstack/okta-sdk",
+    "name": "gitlab-it/okta-sdk",
     "description": "Okta API SDK for Laravel",
-    "license": "Apache-2.0",
+    "license": "MIT",
     "authors": [
         {
             "name": "Dillon Wheeler",
@@ -24,13 +24,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Glamstack\\Okta\\": "src/"
+            "GitlabIt\\Okta\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Glamstack\\Okta\\OktaServiceProvider"
+                "GitlabIt\\Okta\\OktaServiceProvider"
             ]
         }
     }
