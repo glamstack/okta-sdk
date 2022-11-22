@@ -8,7 +8,7 @@ class OktaServiceProvider extends ServiceProvider
 {
     // use ServiceBindings;
 
-    public function boot() : void
+    public function boot(): void
     {
         $this->bootRoutes();
     }
@@ -29,9 +29,8 @@ class OktaServiceProvider extends ServiceProvider
         //$this->loadRoutesFrom(__DIR__.'/Routes/console.php');
     }
 
-    protected function registerConfig() : void
+    protected function registerConfig(): void
     {
-
         //
         // Merge config file into application config
         //

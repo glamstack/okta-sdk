@@ -12,8 +12,8 @@ class ApiClient
 {
     use ResponseLog;
 
-    const API_VERSION = 1;
-    const REQUIRED_CONFIG_PARAMETERS = ['base_url', 'api_token', 'log_channels'];
+    public const API_VERSION = 1;
+    public const REQUIRED_CONFIG_PARAMETERS = ['base_url', 'api_token', 'log_channels'];
 
     private string $api_token;
     private string $base_url;
@@ -95,13 +95,13 @@ class ApiClient
      * Validate that array keys in `REQUIRED_CONFIG_PARAMETERS` exists in the
      * `connection_config`
      *
-     * This method will loop through each of the required parameters in 
+     * This method will loop through each of the required parameters in
      * `REQUIRED_CONFIG_PARAMETERS` and verify that each of them are contained
      * in the provided `connection_config` array. If there is a key missing
      * an error will be logged.
      *
      * @param array $connection_config
-     *      The connection configuration array provided to the `construct` 
+     *      The connection configuration array provided to the `construct`
      *      method.
      */
     protected function validateConnectionConfigArray(array $connection_config)
@@ -353,7 +353,6 @@ class ApiClient
 
             // If the response is a paginated response
             if ($this->checkForPagination($response->headers) == true) {
-
                 // Get paginated URL and send the request to the getPaginatedResults
                 // helper function which loops through all paginated requests
                 $paginated_url = $this->generateNextPaginatedResultUrl($response->headers);
@@ -383,7 +382,7 @@ class ApiClient
 
     /**
      * Okta API POST Request
-     * 
+     *
      * This method is called from other services to perform a POST request and
      * return a structured object.
      *
@@ -424,7 +423,7 @@ class ApiClient
 
     /**
      * Okta API PUT Request
-     * 
+     *
      * This method is called from other services to perform a PUT request and
      * return a structured object.
      *
@@ -465,8 +464,8 @@ class ApiClient
 
     /**
      * Okta API DELETE Request
-     * 
-     * This method is called from other services to perform a DELETE request and 
+     *
+     * This method is called from other services to perform a DELETE request and
      * return a structured object.
      *
      * Example Usage:
@@ -503,7 +502,7 @@ class ApiClient
 
     /**
      * Convert API Response Headers to Object
-     * 
+     *
      * This method is called from the parseApiResponse method to prettify the
      * Guzzle Headers that are an array with nested array for each value, and
      * converts the single array values into strings and converts to an object for
