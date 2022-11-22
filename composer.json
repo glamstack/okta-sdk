@@ -1,7 +1,7 @@
 {
     "name": "gitlab-it/okta-sdk",
     "description": "Okta API SDK for Laravel",
-    "license": "Apache-2.0",
+    "license": "MIT",
     "authors": [
         {
             "name": "Dillon Wheeler",
