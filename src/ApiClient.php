@@ -608,7 +608,7 @@ class ApiClient
      *
      * @return ?string URL string or null if not found
      */
-    public function generateNextPaginatedResultUrl(array $headers): string
+    public function generateNextPaginatedResultUrl(array $headers): ?string
     {
         // If a 'link' header exists, then there is another page to loop
         // <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
