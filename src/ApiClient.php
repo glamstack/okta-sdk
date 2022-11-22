@@ -3,7 +3,6 @@
 namespace GitlabIt\Okta;
 
 use GitlabIt\Okta\Traits\ResponseLog;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -103,8 +102,10 @@ class ApiClient
      * @param array $connection_config
      *      The connection configuration array provided to the `construct`
      *      method.
+     *
+     * @return void
      */
-    protected function validateConnectionConfigArray(array $connection_config)
+    protected function validateConnectionConfigArray(array $connection_config): void
     {
         foreach (self::REQUIRED_CONFIG_PARAMETERS as $parameter) {
             if (!array_key_exists($parameter, $connection_config)) {
@@ -138,11 +139,11 @@ class ApiClient
     /**
      * Set the connection_key class property variable
      *
-     * @param string $connection_key (Optional) The connection key to use from
-     *     the configuration file. If not set, it will use the default connection
-     *     configured in OKTA_DEFAULT_CONNECTION `.env` variable. If the `.env`
-     *     variable is not set, the value in `config/okta-sdk.php` will be
-     *     used, which has a default of the `prod` connection.
+     * @param string|null $connection_key (Optional)
+     *      The connection key to use from the configuration file. If not set,
+     *      it will use the default connection configured in OKTA_DEFAULT_CONNECTION
+     *      `.env` variable. If the `.env` variable is not set, the value in
+     *      `config/okta-sdk.php` will be used, which has a default of the `prod` connection.
      *
      * @return void
      */
@@ -161,6 +162,9 @@ class ApiClient
      * Define an array in the class using the connection configuration in the
      * okta-sdk.php connections array. If connection key is not specified,
      * an error log will be created and a 501 abort error will be thrown.
+     *
+     * @param array $custom_configuration
+     *      Custom configuration array for SDK initialization
      *
      * @return void
      */
@@ -431,7 +435,7 @@ class ApiClient
      *
      * @param array $request_data Optional request data to send with PUT request
      *
-     * @return object See parseApiResponse() method. The content and
+     * @return object|string See parseApiResponse() method. The content and
      *      schema of the object and json arrays can be found in the REST API
      *      documentation for the specific endpoint.
      */
@@ -465,13 +469,16 @@ class ApiClient
      * return $okta_api->delete('/user/'.$group_id);
      * ```
      *
-     * @param string $uri The URI with leading slash after `/api/v1`
+     * @param string $uri
+     *      The URI with leading slash after `/api/v1`
      *
-     * @param array $request_data Optional request data to send with DELETE request
+     * @param array $request_data
+     *      Optional request data to send with DELETE request
      *
-     * @return object|string See parseApiResponse() method. The content and
-     *      schema of the object and json arrays can be found in the REST API
-     *      documentation for the specific endpoint.
+     * @return object|string
+     *      See parseApiResponse() method. The content and schema of the object
+     *      and json arrays can be found in the REST API documentation for the
+     *      specific endpoint.
      */
     public function delete(string $uri, array $request_data = []): object|string
     {
@@ -592,7 +599,7 @@ class ApiClient
      *
      * @return ?string URL string or null if not found
      */
-    public function generateNextPaginatedResultUrl(array $headers): string
+    public function generateNextPaginatedResultUrl(array $headers): ?string
     {
         // If a 'link' header exists, then there is another page to loop
         // <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
@@ -626,9 +633,8 @@ class ApiClient
      * $this->getPaginatedResults('/users');
      * ```
      *
-     * @param string $endpoint The endpoint to use Okta API on.
-     *
-     * @param mixed $query_string Optional request data to send with GET request
+     * @param string $paginated_url
+     *      The paginated URL
      *
      * @return array An array of the response objects for each page combined.
      */
