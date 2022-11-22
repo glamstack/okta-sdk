@@ -577,13 +577,8 @@ class ApiClient
                     }
                 }
             }
-
-            // If no links contain next, return false result
-            return false;
-        } else {
-            // If links array key does not exist, return false result
-            return false;
         }
+        return false;
     }
 
     /**
