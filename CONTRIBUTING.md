@@ -33,7 +33,7 @@ git clone https://gitlab.com/gitlab-it/okta-sdk.git
 
 ```bash
 cd ~/Sites/{my-laravel-app}
-mkdir -p packages/glamstack
+mkdir -p packages/gitlab-it
 cd packages/gitlab-it
 ln -s ~/Sites/okta-sdk okta-sdk
 ```
