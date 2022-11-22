@@ -1,6 +1,6 @@
 <?php
 
-namespace Glamstack\Okta\Traits;
+namespace GitlabIt\Okta\Traits;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
