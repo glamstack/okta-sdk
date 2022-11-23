@@ -356,8 +356,7 @@ class ApiClient
 
                 // Get paginated URL and send the request to the getPaginatedResults
                 // helper function which loops through all paginated requests
-                $paginated_url = $this->generateNextPaginatedResultUrl($response->headers);
-                $paginated_results = $this->getPaginatedResults($paginated_url);
+                $paginated_results = $this->getPaginatedResults($this->base_url . $uri);
 
                 // The $paginated_results will be returned as an object of objects
                 // which needs to be converted to a flat object for standardizing
@@ -609,7 +608,7 @@ class ApiClient
      *
      * @return ?string URL string or null if not found
      */
-    public function generateNextPaginatedResultUrl(array $headers): string
+    public function generateNextPaginatedResultUrl(array $headers): ?string
     {
         // If a 'link' header exists, then there is another page to loop
         // <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
