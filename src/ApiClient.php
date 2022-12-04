@@ -345,8 +345,7 @@ class ApiClient
             if ($this->checkForPagination($response->headers) == true) {
                 // Get paginated URL and send the request to the getPaginatedResults
                 // helper function which loops through all paginated requests
-                $paginated_url = $this->generateNextPaginatedResultUrl($response->headers);
-                $paginated_results = $this->getPaginatedResults($paginated_url);
+                $paginated_results = $this->getPaginatedResults($this->base_url . $uri);
 
                 // The $paginated_results will be returned as an object of objects
                 // which needs to be converted to a flat object for standardizing
