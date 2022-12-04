@@ -113,13 +113,11 @@ class ApiClient
                     'in the ApiClient construct conneciton_config array provided. ' .
                     'This is a required parameter to be passed in not using the ' .
                     'configuration file and connection_key initialization method.';
-
             } else {
                 $error_message = 'The Okta SDK connection_config array provided ' .
                     'in the ApiClient construct connection_config array ' .
                     'size should be ' . count(self::REQUIRED_CONFIG_PARAMETERS) .
                     'but ' . count($connection_config) . ' array keys were provided.';
-
             }
             Log::stack((array) config('okta-sdk.auth.log_channels'))
                 ->critical(
@@ -134,7 +132,6 @@ class ApiClient
                 );
         }
     }
-
 
     /**
      * Set the connection_key class property variable
