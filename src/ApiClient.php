@@ -136,7 +136,7 @@ class ApiClient
     /**
      * Set the connection_key class property variable
      *
-     * @param string|null $connection_key (Optional)
+     * @param ?string $connection_key (Optional)
      *      The connection key to use from the configuration file. If not set,
      *      it will use the default connection configured in OKTA_DEFAULT_CONNECTION
      *      `.env` variable. If the `.env` variable is not set, the value in
@@ -273,7 +273,6 @@ class ApiClient
         // array to get the package name (in case it changes with a fork) and
         // return the version key. For production, this will show a release
         // number. In development, this will show the branch name.
-        /** @phpstan-ignore-next-line */
         $composer_package = collect($composer_lock_json['packages'])
             ->where('name', 'gitlab-it/okta-sdk')
             ->first();
@@ -325,11 +324,11 @@ class ApiClient
      *
      * @param array $request_data Optional query data to apply to GET request
      *
-     * @return object|string See parseApiResponse() method. The content and
+     * @return object See parseApiResponse() method. The content and
      *      schema of the object and json arrays can be found in the REST API
      *      documentation for the specific endpoint.
      */
-    public function get(string $uri, array $request_data = []): object|string
+    public function get(string $uri, array $request_data = []): object
     {
         try {
             // Utilize HTTP to run a GET request against the base URL with the
@@ -338,7 +337,7 @@ class ApiClient
                 ->get($this->base_url . $uri, $request_data);
 
             // Parse API Response and convert to returnable object with expected format
-            $response = $this->parseApiResponse($request, false);
+            $response = $this->parseApiResponse($request);
             $this->logResponse('get', $this->base_url . $uri, $response);
 
             // If the response is a paginated response
@@ -352,6 +351,7 @@ class ApiClient
                 // the response returned. This needs to be a separate function
                 // instead of casting to an object due to return body complexities
                 // with nested array and object mixed notation.
+                /* @phpstan-ignore-next-line */
                 $request->paginated_results = $this->convertPaginatedResponseToObject($paginated_results);
 
                 // Unset property for body and json
@@ -359,8 +359,7 @@ class ApiClient
                 unset($request->json);
 
                 // Parse API Response and convert to returnable object with expected format
-                // The checkForPagination method will return a boolean that is passed.
-                $response = $this->parseApiResponse($request, true);
+                $response = $this->parseApiResponse($request);
             }
 
             return $response;
@@ -390,11 +389,11 @@ class ApiClient
      *
      * @param array $request_data Optional Post Body array
      *
-     * @return object|string See parseApiResponse() method. The content and
+     * @return object See parseApiResponse() method. The content and
      *      schema of the object and json arrays can be found in the REST API
      *      documentation for the specific endpoint.
      */
-    public function post(string $uri, array $request_data = []): object|string
+    public function post(string $uri, array $request_data = []): object
     {
         try {
             $request = Http::withHeaders($this->request_headers)
@@ -431,11 +430,11 @@ class ApiClient
      *
      * @param array $request_data Optional request data to send with PUT request
      *
-     * @return object|string See parseApiResponse() method. The content and
+     * @return object See parseApiResponse() method. The content and
      *      schema of the object and json arrays can be found in the REST API
      *      documentation for the specific endpoint.
      */
-    public function put(string $uri, array $request_data = []): object|string
+    public function put(string $uri, array $request_data = []): object
     {
         try {
             $request = Http::withHeaders($this->request_headers)
@@ -471,12 +470,12 @@ class ApiClient
      * @param array $request_data
      *      Optional request data to send with DELETE request
      *
-     * @return object|string
+     * @return object
      *      See parseApiResponse() method. The content and schema of the object
      *      and json arrays can be found in the REST API documentation for the
      *      specific endpoint.
      */
-    public function delete(string $uri, array $request_data = []): object|string
+    public function delete(string $uri, array $request_data = []): object
     {
         try {
             $request = Http::withHeaders($this->request_headers)
@@ -690,8 +689,6 @@ class ApiClient
      *
      * @param object $response Response object from API results
      *
-     * @param false $paginated If the response is paginated or not
-     *
      * @return object Custom response returned for consistency
      *  {
      *    +"headers": [
@@ -717,12 +714,20 @@ class ApiClient
      *   }
      * }
      */
-    public function parseApiResponse(object $response, bool $paginated = false): object
+    public function parseApiResponse(object $response): object
     {
+        if (property_exists($response, 'paginated_results')) {
+            $json_output = json_encode($response->paginated_results);
+            $object_output = (object) $response->paginated_results;
+        } else {
+            $json_output = json_encode($response->json());
+            $object_output = $response->object();
+        }
+
         return (object) [
             'headers' => $this->convertHeadersToArray($response->headers()),
-            'json' => $paginated == true ? json_encode($response->paginated_results) : json_encode($response->json()),
-            'object' => $paginated == true ? (object) $response->paginated_results : $response->object(),
+            'json' => $json_output,
+            'object' => $object_output,
             'status' => (object) [
                 'code' => $response->status(),
                 'ok' => $response->ok(),
@@ -745,7 +750,21 @@ class ApiClient
      *
      * @param string $reference Reference slug or identifier
      *
-     * @return string Error message
+     * @return object Custom response returned for consistency
+     *  {
+     *    +"error": {
+     *      +"code": "<string>"
+     *      +"message": "<string>"
+     *      +"reference": "<string>"
+     *    }
+     *    +"status": {
+     *      +"code": 400
+     *      +"ok": false
+     *      +"successful": false
+     *      +"failed": true
+     *      +"serverError": false
+     *      +"clientError": true
+     *   }
      */
     public function handleException($exception, $log_class, $reference)
     {
@@ -760,6 +779,20 @@ class ApiClient
                 'status_code' => $exception->getCode(),
             ]);
 
-        return $exception->getMessage();
+        return (object) [
+            'error' => (object) [
+                'code' => $exception->getCode(),
+                'message' => $exception->getMessage(),
+                'reference' => $reference
+            ],
+            'status' => (object) [
+                'code' => $exception->getCode(),
+                'ok' => false,
+                'successful' => false,
+                'failed' => true,
+                'serverError' => true,
+                'clientError' => false,
+            ],
+        ];
     }
 }
