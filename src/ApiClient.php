@@ -1,9 +1,8 @@
 <?php
 
-namespace Glamstack\Okta;
+namespace GitlabIt\Okta;
 
-use Glamstack\Okta\Traits\ResponseLog;
-use Illuminate\Http\Client\Response;
+use GitlabIt\Okta\Traits\ResponseLog;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -12,7 +11,8 @@ class ApiClient
 {
     use ResponseLog;
 
-    const API_VERSION = 1;
+    public const API_VERSION = 1;
+    public const REQUIRED_CONFIG_PARAMETERS = ['base_url', 'api_token', 'log_channels'];
 
     private string $api_token;
     private string $base_url;
@@ -22,19 +22,19 @@ class ApiClient
 
     public function __construct(
         string $connection_key = null,
-        string $api_token = null
+        array $connection_config = []
     ) {
-        // Set the class connection_key variable.
-        $this->setConnectionKey($connection_key);
+        if (empty($connection_config)) {
+            $this->setConnectionKeyConfiguration($connection_key);
+        } else {
+            $this->setCustomConfiguration($connection_config);
+        }
 
-        // Set the class connection_configuration variable
-        $this->setConnectionConfig();
+        // Set the class api_scopes variable
+        $this->setApiToken();
 
-        // Set the class base_url variable.
+        // Set the class base_url variable
         $this->setBaseUrl();
-
-        // Set the class api_scopes variable.
-        $this->setApiToken($api_token);
 
         // Set request headers
         $this->setRequestHeaders();
@@ -44,44 +44,139 @@ class ApiClient
     }
 
     /**
-     * Set the connection_key class property variable
+     * Set the configuration utilizing the `connection_key`
      *
-     * @param string $connection_key (Optional) The connection key to use from
-     *     the configuration file. If not set, it will use the default connection 
-     *     configured in OKTA_DEFAULT_CONNECTION `.env` variable. If the `.env` 
-     *     variable is not set, the value in `config/glamstack-okta.php` will be 
-     *     used, which has a default of the `prod` connection.
+     * This method will utilize the `connection_key` provided in the construct
+     * method. The `connection_key` will correspond to a `connection` in the
+     * configuration file.
+     *
+     * @param ?string $connection_key
+     *      The connection key to use for configuration.
      *
      * @return void
      */
-    protected function setConnectionKey(?string $connection_key) : void
+    protected function setConnectionKeyConfiguration(?string $connection_key): void
+    {
+        // Set the class connection_key variable.
+        $this->setConnectionKey($connection_key);
+
+        // Set the class connection_configuration variable
+        $this->setConnectionConfig();
+    }
+
+    /**
+     * Set the configuration utilizing the `connection_config`
+     *
+     * This method will utilize the `connection_config` array provided in the
+     * construct method. The `connection_config` array keys will have to match
+     * the `REQUIRED_CONFIG_PARAMETERS` array
+     *
+     * @param array $connection_config
+     *      Array that contains the required parameters for the connection
+     *      configuration
+     *
+     * @return void
+     */
+    protected function setCustomConfiguration(array $connection_config): void
+    {
+        // Validate that `$connection_config` has all required parameters
+        $this->validateConnectionConfigArray($connection_config);
+
+        // Set the connection key to `custom` and will be ignored for remainder
+        // of the SDK use
+        $this->setConnectionKey('custom');
+
+        // Set the connection_config array with the provided array
+        $this->setConnectionConfig($connection_config);
+    }
+
+    /**
+     * Validate that array keys in `REQUIRED_CONFIG_PARAMETERS` exists in the
+     * `connection_config`
+     *
+     * This method will loop through each of the required parameters in
+     * `REQUIRED_CONFIG_PARAMETERS` and verify that each of them are contained
+     * in the provided `connection_config` array. If there is a key missing
+     * an error will be logged.
+     *
+     * @param array $connection_config
+     *      The connection configuration array provided to the `construct`
+     *      method.
+     *
+     * @return void
+     */
+    protected function validateConnectionConfigArray(array $connection_config): void
+    {
+        foreach (self::REQUIRED_CONFIG_PARAMETERS as $parameter) {
+            if (!array_key_exists($parameter, $connection_config)) {
+                $error_message = 'The Okta ' . $parameter . ' is not defined ' .
+                    'in the ApiClient construct conneciton_config array provided. ' .
+                    'This is a required parameter to be passed in not using the ' .
+                    'configuration file and connection_key initialization method.';
+            } else {
+                $error_message = 'The Okta SDK connection_config array provided ' .
+                    'in the ApiClient construct connection_config array ' .
+                    'size should be ' . count(self::REQUIRED_CONFIG_PARAMETERS) .
+                    'but ' . count($connection_config) . ' array keys were provided.';
+            }
+            Log::stack((array) config('okta-sdk.auth.log_channels'))
+                ->critical(
+                    $error_message,
+                    [
+                        'event_type' => 'okta-api-config-missing-error',
+                        'class' => get_class(),
+                        'status_code' => '501',
+                        'message' => $error_message,
+                        'connection_url' => $connection_config['base_url'],
+                    ]
+                );
+        }
+    }
+
+    /**
+     * Set the connection_key class property variable
+     *
+     * @param string|null $connection_key (Optional)
+     *      The connection key to use from the configuration file. If not set,
+     *      it will use the default connection configured in OKTA_DEFAULT_CONNECTION
+     *      `.env` variable. If the `.env` variable is not set, the value in
+     *      `config/okta-sdk.php` will be used, which has a default of the `prod` connection.
+     *
+     * @return void
+     */
+    protected function setConnectionKey(string $connection_key = null): void
     {
         if ($connection_key == null) {
-            $this->connection_key = config('glamstack-okta.auth.default_connection');
+            $this->connection_key = config('okta-sdk.auth.default_connection');
         } else {
             $this->connection_key = $connection_key;
         }
     }
 
     /**
-     * Set the connection_config class property array 
+     * Set the connection_config class property array
      *
      * Define an array in the class using the connection configuration in the
-     * glamstack-okta.php connections array. If connection key is not specified,
+     * okta-sdk.php connections array. If connection key is not specified,
      * an error log will be created and a 501 abort error will be thrown.
+     *
+     * @param array $custom_configuration
+     *      Custom configuration array for SDK initialization
      *
      * @return void
      */
-    protected function setConnectionConfig(): void
+    protected function setConnectionConfig(array $custom_configuration = []): void
     {
-        if (array_key_exists($this->connection_key, config('glamstack-okta.connections'))) {
-            $this->connection_config = config('glamstack-okta.connections.' . $this->connection_key);
+        if (array_key_exists($this->connection_key, config('okta-sdk.connections')) && empty($custom_configuration)) {
+            $this->connection_config = config('okta-sdk.connections.' . $this->connection_key);
+        } elseif ($custom_configuration) {
+            $this->connection_config = $custom_configuration;
         } else {
             $error_message = 'The Okta connection key is not defined in ' .
-                '`config/glamstack-okta.php` connections array. Without this ' .
+                '`config/okta-sdk.php` connections array. Without this ' .
                 'array config, there is no URL or API token to connect with.';
 
-            Log::stack((array) config('glamstack-okta.auth.log_channels'))
+            Log::stack((array) config('okta-sdk.auth.log_channels'))
                 ->critical($error_message, [
                     'event_type' => 'okta-api-config-missing-error',
                     'class' => get_class(),
@@ -98,21 +193,21 @@ class ApiClient
      * Set the base_url class property variable
      *
      * The base_url variable will use the connection configuration Base URL
-     * that is defined in your `.env` file or config/glamstack-okta.php.
+     * that is defined in your `.env` file or config/okta-sdk.php.
      *
      * @return void
      */
-    protected function setBaseUrl() : void
+    protected function setBaseUrl(): void
     {
         if ($this->connection_config['base_url'] != null) {
             $this->base_url = $this->connection_config['base_url'] . '/api/v' . self::API_VERSION;
         } else {
             $error_message = 'The Base URL for this Okta connection key ' .
-                'is not defined in `config/glamstack-okta.php` or `.env` file. ' .
+                'is not defined in `config/okta-sdk.php` or `.env` file. ' .
                 'Without this configuration (ex. `https://mycompany.okta.com`), ' .
                 'there is no URL to perform API calls with.';
 
-            Log::stack((array) config('glamstack-okta.auth.log_channels'))
+            Log::stack((array) config('okta-sdk.auth.log_channels'))
                 ->critical($error_message, [
                     'event_type' => 'okta-api-config-missing-error',
                     'class' => get_class(),
@@ -133,43 +228,21 @@ class ApiClient
      * ApiClient, you can pass a different API token as an argument. This
      * method sets the API token based on whether the argument was provided.
      *
-     * @param string|null $api_token (Optional) Okta API token to use. This will
-     * override the API token defined in the `.env` file.
      * @return void
      */
-    protected function setApiToken(?string $api_token) : void
+    protected function setApiToken(): void
     {
         // If API token was not provided in construct, use config file value
-        if ($api_token == null && $this->connection_config['api_token'] != null) {
+        if ($this->connection_config['api_token'] != null) {
             $this->api_token = $this->connection_config['api_token'];
-
-        // If API token was provided, override config file value
-        } elseif ($api_token != null) {
-            $this->api_token = $api_token;
-
-            $info_message = 'The Okta API token for these API calls is using an ' .
-                'API token that was provided in the ApiClient construct ' .
-                'method. The API token that might be configured in the ' .
-                '`.env` file is not being used.';
-
-            Log::stack((array) config('glamstack-okta.auth.log_channels'))
-                ->notice($info_message, [
-                    'event_type' => 'okta-api-config-override-notice',
-                    'class' => get_class(),
-                    'status_code' => '203',
-                    'message' =>  $info_message,
-                    'okta_connection' => $this->connection_key,
-                ]);
-
-        // If API token is not defined, abort with an error message
         } else {
             $error_message = 'The API token for this Okta connection key ' .
                 'is not defined in your `.env` file. The variable name for the ' .
                 'API token can be found in the connection configuration in ' .
-                '`config/glamstack-okta.php`. Without this API token, you will ' .
+                '`config/okta-sdk.php`. Without this API token, you will ' .
                 'not be able to performed authenticated API calls.';
 
-            Log::stack((array) config('glamstack-okta.auth.log_channels'))
+            Log::stack((array) config('okta-sdk.auth.log_channels'))
                 ->critical($error_message, [
                     'event_type' => 'okta-api-config-missing-error',
                     'class' => get_class(),
@@ -187,7 +260,7 @@ class ApiClient
      *
      * @return void
      */
-    public function setRequestHeaders() : void
+    public function setRequestHeaders(): void
     {
         // Get Laravel and PHP Version
         $laravel = 'Laravel/' . app()->version();
@@ -202,10 +275,10 @@ class ApiClient
         // number. In development, this will show the branch name.
         /** @phpstan-ignore-next-line */
         $composer_package = collect($composer_lock_json['packages'])
-            ->where('name', 'glamstack/okta-sdk')
+            ->where('name', 'gitlab-it/okta-sdk')
             ->first();
 
-        // Reformat `glamstack/okta-sdk` as `Glamstack-Okta-Sdk`
+        // Reformat `gitlab-it/okta-sdk` as `GitLabIT-Okta-Sdk`
         $composer_package_formatted = Str::title(Str::replace('/', '-', $composer_package['name']));
         $package = $composer_package_formatted . '/' . $composer_package['version'];
 
@@ -223,7 +296,7 @@ class ApiClient
      *
      * @return void
      */
-    public function testConnection() : void
+    public function testConnection(): void
     {
         // API call to get Okta organization details (a simple API endpoint)
         // Logging for the request is handled by the get() method.
@@ -232,7 +305,7 @@ class ApiClient
         if ($response->status->ok == false) {
             if (property_exists($response->object, 'errorCode')) {
                 $error_message = 'Okta API Error ' . $response->object->errorCode . ' - ' .
-                $response->object->errorSummary;
+                    $response->object->errorSummary;
             } else {
                 $error_message = 'The Okta API connection test failed for an unknown reason. See logs for details.';
             }
@@ -245,7 +318,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * $okta_api = new \Glamstack\Okta\ApiClient('prod');
+     * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
      * return $okta_api->get('/users/'.$id);
      * ```
      * @param string $uri The URI with leading slash after `/api/v1`
@@ -270,11 +343,9 @@ class ApiClient
 
             // If the response is a paginated response
             if ($this->checkForPagination($response->headers) == true) {
-
                 // Get paginated URL and send the request to the getPaginatedResults
                 // helper function which loops through all paginated requests
-                $paginated_url = $this->generateNextPaginatedResultUrl($response->headers);
-                $paginated_results = $this->getPaginatedResults($paginated_url);
+                $paginated_results = $this->getPaginatedResults($this->base_url . $uri);
 
                 // The $paginated_results will be returned as an object of objects
                 // which needs to be converted to a flat object for standardizing
@@ -300,13 +371,13 @@ class ApiClient
 
     /**
      * Okta API POST Request
-     * 
+     *
      * This method is called from other services to perform a POST request and
      * return a structured object.
      *
      * Example Usage:
      * ```php
-     * $okta_api = new \Glamstack\Okta\ApiClient('prod');
+     * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
      * return $okta_api->post('/groups', [
      *      'profile' => [
      *          'name' => 'Hack The Planet Elite Members',
@@ -341,13 +412,13 @@ class ApiClient
 
     /**
      * Okta API PUT Request
-     * 
+     *
      * This method is called from other services to perform a PUT request and
      * return a structured object.
      *
      * Example Usage:
      * ```php
-     * $okta_api = new \Glamstack\Okta\ApiClient('prod');
+     * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
      * return $okta_api->post('/groups/' . $group_id, [
      *      'profile' => [
      *          'name' => 'Hack The Planet Apprentice Members',
@@ -360,7 +431,7 @@ class ApiClient
      *
      * @param array $request_data Optional request data to send with PUT request
      *
-     * @return object See parseApiResponse() method. The content and
+     * @return object|string See parseApiResponse() method. The content and
      *      schema of the object and json arrays can be found in the REST API
      *      documentation for the specific endpoint.
      */
@@ -382,25 +453,28 @@ class ApiClient
 
     /**
      * Okta API DELETE Request
-     * 
-     * This method is called from other services to perform a DELETE request and 
+     *
+     * This method is called from other services to perform a DELETE request and
      * return a structured object.
      *
      * Example Usage:
      * ```php
      * $group_id = '00ub0oNGTSWTBKOLGLNR';
      *
-     * $okta_api = new \Glamstack\Okta\ApiClient('prod');
+     * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
      * return $okta_api->delete('/user/'.$group_id);
      * ```
      *
-     * @param string $uri The URI with leading slash after `/api/v1`
+     * @param string $uri
+     *      The URI with leading slash after `/api/v1`
      *
-     * @param array $request_data Optional request data to send with DELETE request
+     * @param array $request_data
+     *      Optional request data to send with DELETE request
      *
-     * @return object|string See parseApiResponse() method. The content and
-     *      schema of the object and json arrays can be found in the REST API
-     *      documentation for the specific endpoint.
+     * @return object|string
+     *      See parseApiResponse() method. The content and schema of the object
+     *      and json arrays can be found in the REST API documentation for the
+     *      specific endpoint.
      */
     public function delete(string $uri, array $request_data = []): object|string
     {
@@ -420,7 +494,7 @@ class ApiClient
 
     /**
      * Convert API Response Headers to Object
-     * 
+     *
      * This method is called from the parseApiResponse method to prettify the
      * Guzzle Headers that are an array with nested array for each value, and
      * converts the single array values into strings and converts to an object for
@@ -479,8 +553,6 @@ class ApiClient
             // If array has multiple keys, leave as array
             if (count($header_value) > 1) {
                 $headers[$header_key] = $header_value;
-
-            // If array has a single key, convert to a string
             } else {
                 $headers[$header_key] = $header_value[0];
             }
@@ -508,13 +580,8 @@ class ApiClient
                     }
                 }
             }
-
-            // If no links contain next, return false result
-            return false;
-        } else {
-            // If links array key does not exist, return false result
-            return false;
         }
+        return false;
     }
 
     /**
@@ -528,7 +595,7 @@ class ApiClient
      *
      * @return ?string URL string or null if not found
      */
-    public function generateNextPaginatedResultUrl(array $headers): string
+    public function generateNextPaginatedResultUrl(array $headers): ?string
     {
         // If a 'link' header exists, then there is another page to loop
         // <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
@@ -562,9 +629,8 @@ class ApiClient
      * $this->getPaginatedResults('/users');
      * ```
      *
-     * @param string $endpoint The endpoint to use Okta API on.
-     *
-     * @param mixed $query_string Optional request data to send with GET request
+     * @param string $paginated_url
+     *      The paginated URL
      *
      * @return array An array of the response objects for each page combined.
      */
