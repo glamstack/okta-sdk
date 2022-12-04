@@ -430,7 +430,7 @@ class ApiClient
      *
      * @param array $request_data Optional request data to send with PUT request
      *
-     * @return object See parseApiResponse() method. The content and
+     * @return object|string See parseApiResponse() method. The content and
      *      schema of the object and json arrays can be found in the REST API
      *      documentation for the specific endpoint.
      */
