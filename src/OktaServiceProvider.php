@@ -38,7 +38,7 @@ class OktaServiceProvider extends ServiceProvider
         // their own values in the application config file.
         //
         $this->mergeConfigFrom(
-            __DIR__.'/Config/okta-sdk.php',
+            __DIR__ . '/Config/okta-sdk.php',
             'okta-sdk'
         );
 
@@ -53,7 +53,7 @@ class OktaServiceProvider extends ServiceProvider
         // the configuration file values `$value = config('okta-sdk.option');`
         //
         $this->publishes([
-            __DIR__.'/Config/okta-sdk.php' => config_path('okta-sdk.php'),
+            __DIR__ . '/Config/okta-sdk.php' => config_path('okta-sdk.php'),
         ], 'okta-sdk');
     }
 
