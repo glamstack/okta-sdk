@@ -58,7 +58,7 @@ trait ResponseLog
      */
     public function logInfo(string $method, string $url, object $response): void
     {
-        $message = Str::upper($method).' '.$response->status->code.' '.$url;
+        $message = Str::upper($method) . ' ' . $response->status->code . ' ' . $url;
 
         Log::stack((array) $this->connection_config['log_channels'])
             ->info($message, [
@@ -90,7 +90,7 @@ trait ResponseLog
      */
     public function logClientError(string $method, string $url, object $response): void
     {
-        $message = Str::upper($method).' '.$response->status->code.' '.$url;
+        $message = Str::upper($method) . ' ' . $response->status->code . ' ' . $url;
 
         Log::stack((array) $this->connection_config['log_channels'])
             ->notice($message, [
@@ -167,7 +167,9 @@ trait ResponseLog
     {
         if (array_key_exists('x-rate-limit-remaining', $response->headers)) {
             // Calculate percentage of rate limit remaining
-            $rate_limit_percent_remaining = round(((int) $response->headers['x-rate-limit-remaining'] / (int) $response->headers['x-rate-limit-limit']) * 100);
+            $rate_limit_remaining = (int) $response->headers['x-rate-limit-remaining'];
+            $rate_limit_limit = (int) $response->headers['x-rate-limit-limit'];
+            $rate_limit_percent_remaining = round(($rate_limit_remaining / $rate_limit_limit) * 100);
 
             // If percentage remaining is less than 10%, add a warning log
             if ($rate_limit_percent_remaining <= 10) {
