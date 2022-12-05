@@ -36,7 +36,7 @@ code_style:
   allow_failure: true
   cache: {}
   script:
-    - phpcs --standard=PSR12 --extensions=php app
+    - phpcs --standard=PSR12 --extensions=php src
 
 # Code Quality Job
 code_quality:
