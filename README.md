@@ -480,14 +480,35 @@ The second argument of a `get()` method is an optional array of parameters that 
 
 ```php
 // Search for records with a specific name
-// https://developer.okta.com/docs/reference/api/groups/#list-groups
-// https://developer.okta.com/docs/reference/core-okta-api/#filter
+// https://developer.okta.com/docs/reference/api/groups/#list-groups-with-search
 $records = $okta_api->get('/groups', [
-    'q' => 'Hack the Planet Engineers'
+    'search' => 'profile.name eq "Hack the Planet Engineers"'
 ]);
 
 // This will parse the array and render the query string
-// https://mycompany.okta.com/api/v1/groups?q=Hack%20the&%20Planet%20Engineers
+// https://mycompany.okta.com/api/v1/groups?search=profile.name+eq+%22Hack%20the&%20Planet%20Engineers%22
+```
+
+```php
+// List all deprovisioned users
+// https://developer.okta.com/docs/reference/api/users/#list-users-with-search
+$records = $okta_api->get('/users', [
+    'search' => 'status eq "DEPROVISIONED"'
+]);
+
+// This will parse the array and render the query string
+// https://mycompany.okta.com/api/v1/groups?search=status+eq+%22DEPROVISIONED%22
+```
+
+```php
+// Get all users for a specific department
+// https://developer.okta.com/docs/reference/api/users/#list-users-with-search
+$records = $okta_api->get('/users', [
+    'search' => 'profile.department eq "Engineering"'
+]);
+
+// This will parse the array and render the query string
+// https://mycompany.okta.com/api/v1/groups?search=profile.department+eq+%22Engineering%22
 ```
 
 ### POST Requests
