@@ -344,7 +344,7 @@ class ApiClient
             if ($this->checkForPagination($response->headers) == true) {
                 // Get paginated URL and send the request to the getPaginatedResults
                 // helper function which loops through all paginated requests
-                $paginated_results = $this->getPaginatedResults($this->base_url . $uri);
+                $paginated_results = $this->getPaginatedResults($this->base_url . $uri, $request_data);
 
                 // The $paginated_results will be returned as an object of objects
                 // which needs to be converted to a flat object for standardizing
@@ -631,18 +631,26 @@ class ApiClient
      * @param string $paginated_url
      *      The paginated URL
      *
+     * @param array $request_data Optional query data to apply to GET request
+     *
      * @return array An array of the response objects for each page combined.
      */
-    public function getPaginatedResults(string $paginated_url): array
+    public function getPaginatedResults(string $paginated_url, array $request_data = []): array
     {
         // Define empty array for adding API results to
         $records = [];
 
         // Perform API calls while $api_url is not null
         do {
-            // Get the record
-            $request = Http::withHeaders($this->request_headers)
-                ->get($paginated_url);
+            // Get the results from the API. The conditional ensures that the
+            // request data doesn't overwrite the pagination cursor.
+            if($request_data != []) {
+                $request = Http::withHeaders($this->request_headers)
+                    ->get($paginated_url, $request_data);
+            } else {
+                $request = Http::withHeaders($this->request_headers)
+                    ->get($paginated_url);
+            }
 
             $response = $this->parseApiResponse($request);
             $this->logResponse('get', $paginated_url, $response);
@@ -659,6 +667,10 @@ class ApiClient
             } else {
                 $paginated_url = null;
             }
+
+            // Set request data to null after first iteration since it is now
+            // embedded in the response header URL
+            $request_data = [];
         } while ($paginated_url != null);
 
         return $records;
