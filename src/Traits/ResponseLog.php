@@ -13,14 +13,14 @@ trait ResponseLog
      * This method is called from other methods and will call specific methods
      * depending on the log severity level.
      *
-     * @param string $method The lowercase name of the method that calls this
-     * function (ex. `get`)
+     * @param string $method
+     *      The lowercase name of the method that calls this function (ex. `get`)
      *
-     * @param string $url The URL of the API call including the concatenated
-     * base URL and URI
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
      *
-     * @param object $response The HTTP response formatted with
-     * $this->parseApiResponse()
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
      *
      * @return void
      */
@@ -45,14 +45,14 @@ trait ResponseLog
     /**
      * Create an info log entry for an API call
      *
-     * @param string $method The lowercase name of the method that calls this
-     * function (ex. `get`)
+     * @param string $method
+     *      The lowercase name of the method that calls this function (ex. `get`)
      *
-     * @param string $url The URL of the API call including the concatenated
-     * base URL and URI
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
      *
-     * @param object $response The HTTP response formatted with
-     * $this->parseApiResponse()
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
      *
      * @return void
      */
@@ -77,14 +77,14 @@ trait ResponseLog
     /**
      * Create a notice log entry for an API call for client errors (4xx status)
      *
-     * @param string $method The lowercase name of the method that calls this
-     * function (ex. `get`)
+     * @param string $method
+     *      The lowercase name of the method that calls this function (ex. `get`)
      *
-     * @param string $url The URL of the API call including the concatenated
-     * base URL and URI
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
      *
-     * @param object $response The HTTP response formatted with
-     * $this->parseApiResponse()
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
      *
      * @return void
      */
@@ -114,14 +114,14 @@ trait ResponseLog
     /**
      * Create an error log entry for an API call for server errors (5xx status)
      *
-     * @param string $method The lowercase name of the method that calls this
-     * function (ex. `get`)
+     * @param string $method
+     *      The lowercase name of the method that calls this function (ex. `get`)
      *
-     * @param string $url The URL of the API call including the concatenated
-     * base URL and URI
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
      *
-     * @param object $response The HTTP response formatted with
-     * $this->parseApiResponse()
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
      *
      * @return void
      */
@@ -152,14 +152,14 @@ trait ResponseLog
      * Create a warning log entry for an API call if the rate limit remaining
      * is less than 10 percent that is calculated in the method
      *
-     * @param string $method The lowercase name of the method that calls this
-     * function (ex. `get`)
+     * @param string $method
+     *      The lowercase name of the method that calls this function (ex. `get`)
      *
-     * @param string $url The URL of the API call including the concatenated
-     * base URL and URI
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
      *
-     * @param object $response The HTTP response formatted with
-     * $this->parseApiResponse()
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
      *
      * @return void
      */
@@ -199,14 +199,14 @@ trait ResponseLog
      * is equal to zero (0) or one (1), indicating that this is the last
      * request that will be successful.
      *
-     * @param string $method The lowercase name of the method that calls this
-     * function (ex. `get`)
+     * @param string $method
+     *      The lowercase name of the method that calls this function (ex. `get`)
      *
-     * @param string $url The URL of the API call including the concatenated
-     * base URL and URI
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
      *
-     * @param object $response The HTTP response formatted with
-     * $this->parseApiResponse()
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
      *
      * @return void
      */
