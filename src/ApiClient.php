@@ -46,9 +46,8 @@ class ApiClient
     /**
      * Set the configuration utilizing the `connection_key`
      *
-     * This method will utilize the `connection_key` provided in the construct
-     * method. The `connection_key` will correspond to a `connection` in the
-     * configuration file.
+     * This method will utilize the `connection_key` provided in the construct method. The `connection_key` will
+     * correspond to a `connection` in the configuration file.
      *
      * @param ?string $connection_key
      *      The connection key to use for configuration.
@@ -67,13 +66,11 @@ class ApiClient
     /**
      * Set the configuration utilizing the `connection_config`
      *
-     * This method will utilize the `connection_config` array provided in the
-     * construct method. The `connection_config` array keys will have to match
-     * the `REQUIRED_CONFIG_PARAMETERS` array
+     * This method will utilize the `connection_config` array provided in the construct method. The `connection_config`
+     * array keys will have to match the `REQUIRED_CONFIG_PARAMETERS` array
      *
      * @param array $connection_config
-     *      Array that contains the required parameters for the connection
-     *      configuration
+     *      Array that contains the required parameters for the connection configuration
      *
      * @return void
      */
@@ -82,8 +79,7 @@ class ApiClient
         // Validate that `$connection_config` has all required parameters
         $this->validateConnectionConfigArray($connection_config);
 
-        // Set the connection key to `custom` and will be ignored for remainder
-        // of the SDK use
+        // Set the connection key to `custom` and will be ignored for remainder of the SDK use
         $this->setConnectionKey('custom');
 
         // Set the connection_config array with the provided array
@@ -91,17 +87,13 @@ class ApiClient
     }
 
     /**
-     * Validate that array keys in `REQUIRED_CONFIG_PARAMETERS` exists in the
-     * `connection_config`
+     * Validate that array keys in `REQUIRED_CONFIG_PARAMETERS` exists in the `connection_config`
      *
-     * This method will loop through each of the required parameters in
-     * `REQUIRED_CONFIG_PARAMETERS` and verify that each of them are contained
-     * in the provided `connection_config` array. If there is a key missing
-     * an error will be logged.
+     * Loop through each of the required parameters in `REQUIRED_CONFIG_PARAMETERS` and verify that each of them are
+     * contained in the provided `connection_config` array. If there is a key missing an error will be logged.
      *
      * @param array $connection_config
-     *      The connection configuration array provided to the `construct`
-     *      method.
+     *      The connection configuration array provided to the `construct` method.
      *
      * @return void
      */
@@ -110,7 +102,7 @@ class ApiClient
         foreach (self::REQUIRED_CONFIG_PARAMETERS as $parameter) {
             if (!array_key_exists($parameter, $connection_config)) {
                 $error_message = 'The Okta ' . $parameter . ' is not defined ' .
-                    'in the ApiClient construct conneciton_config array provided. ' .
+                    'in the ApiClient construct connection_config array provided. ' .
                     'This is a required parameter to be passed in not using the ' .
                     'configuration file and connection_key initialization method.';
             } else {
@@ -137,10 +129,8 @@ class ApiClient
      * Set the connection_key class property variable
      *
      * @param ?string $connection_key (Optional)
-     *      The connection key to use from the configuration file. If not set,
-     *      it will use the default connection configured in OKTA_DEFAULT_CONNECTION
-     *      `.env` variable. If the `.env` variable is not set, the value in
-     *      `config/okta-sdk.php` will be used, which has a default of the `prod` connection.
+     *      The connection key to use from config/okta-sdk.php. If not set, it will use the default connection set in
+     *      the OKTA_DEFAULT_CONNECTION `.env` variable or config/okta-sdk.php if not set.
      *
      * @return void
      */
@@ -156,9 +146,8 @@ class ApiClient
     /**
      * Set the connection_config class property array
      *
-     * Define an array in the class using the connection configuration in the
-     * okta-sdk.php connections array. If connection key is not specified,
-     * an error log will be created and a 501 abort error will be thrown.
+     * Define an array in the class using the connection configuration in the okta-sdk.php connections array. If
+     * connection key is not specified, an error log will be created and a 501 abort error will be thrown.
      *
      * @param array $custom_configuration
      *      Custom configuration array for SDK initialization
@@ -192,8 +181,7 @@ class ApiClient
     /**
      * Set the base_url class property variable
      *
-     * The base_url variable will use the connection configuration Base URL
-     * that is defined in your `.env` file or config/okta-sdk.php.
+     * The base_url variable will use the connection Base URL that is defined in `.env` variable or config/okta-sdk.php.
      *
      * @return void
      */
@@ -223,10 +211,9 @@ class ApiClient
     /**
      * Set the api_token class property variable
      *
-     * The api_token variable by default will use the connection configuration
-     * API token that is defined in the `.env` file. When instantiating the
-     * ApiClient, you can pass a different API token as an argument. This
-     * method sets the API token based on whether the argument was provided.
+     * The api_token variable by default will use the connection configuration API token that is defined in the `.env`
+     * file. When instantiating the ApiClient, you can pass a different API token as an argument. This method sets the
+     * API token based on whether the argument was provided.
      *
      * @return void
      */
@@ -269,10 +256,9 @@ class ApiClient
         // Decode the composer.lock file
         $composer_lock_json = json_decode((string) file_get_contents(base_path('composer.lock')), true);
 
-        // Use Laravel collection to search for the package. We will use the
-        // array to get the package name (in case it changes with a fork) and
-        // return the version key. For production, this will show a release
-        // number. In development, this will show the branch name.
+        // Use Laravel collection to search for the package. We will use the array to get the package name (in case it
+        // changes with a fork) and return the version key. For production, this will show a release number. In
+        // development, this will show the branch name.
         $composer_package = collect($composer_lock_json['packages'])
             ->where('name', 'gitlab-it/okta-sdk')
             ->first();
@@ -297,8 +283,7 @@ class ApiClient
      */
     public function testConnection(): void
     {
-        // API call to get Okta organization details (a simple API endpoint)
-        // Logging for the request is handled by the get() method.
+        // API call to get Okta org details (a simple API endpoint) Logging for the request is handled by get() method.
         $response = $this->get('/org');
 
         if ($response->status->ok == false) {
@@ -318,21 +303,22 @@ class ApiClient
      * Example Usage:
      * ```php
      * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
-     * return $okta_api->get('/users/'.$id);
+     * return $okta_api->get('/users/' . $id);
      * ```
-     * @param string $uri The URI with leading slash after `/api/v1`
+     * @param string $uri
+     *      The URI with leading slash after `/api/v1`
      *
-     * @param array $request_data Optional query data to apply to GET request
+     * @param array $request_data
+     *      Optional query data to apply to GET request
      *
-     * @return object See parseApiResponse() method. The content and
-     *      schema of the object and json arrays can be found in the REST API
-     *      documentation for the specific endpoint.
+     * @return object
+     *      See parseApiResponse() method. The content and schema of the object and json arrays can be found in the REST
+     *      API documentation for the specific endpoint.
      */
     public function get(string $uri, array $request_data = []): object
     {
         try {
-            // Utilize HTTP to run a GET request against the base URL with the
-            // URI supplied from the parameter appended to the end.
+            // GET request against the base URL with the URI supplied from the parameter appended to the end
             $request = Http::withHeaders($this->request_headers)
                 ->get($this->base_url . $uri, $request_data);
 
@@ -342,15 +328,12 @@ class ApiClient
 
             // If the response is a paginated response
             if ($this->checkForPagination($response->headers) == true) {
-                // Get paginated URL and send the request to the getPaginatedResults
-                // helper function which loops through all paginated requests
+                // Get paginated URL and use getPaginatedResults to loop through all paginated requests
                 $paginated_results = $this->getPaginatedResults($this->base_url . $uri, $request_data);
 
-                // The $paginated_results will be returned as an object of objects
-                // which needs to be converted to a flat object for standardizing
-                // the response returned. This needs to be a separate function
-                // instead of casting to an object due to return body complexities
-                // with nested array and object mixed notation.
+                // The $paginated_results will be returned as an object of objects which needs to be converted to a flat
+                // object for standardizing the response returned. This needs to be a separate function instead of
+                // casting to an object due to return body complexities with nested array and object mixed notation.
                 /* @phpstan-ignore-next-line */
                 $request->paginated_results = $this->convertPaginatedResponseToObject($paginated_results);
 
@@ -371,8 +354,7 @@ class ApiClient
     /**
      * Okta API POST Request
      *
-     * This method is called from other services to perform a POST request and
-     * return a structured object.
+     * This method is called from other services to perform a POST request and return a structured object.
      *
      * Example Usage:
      * ```php
@@ -385,13 +367,15 @@ class ApiClient
      * ]);
      * ```
      *
-     * @param string $uri The URI with leading slash after `/api/v1`
+     * @param string $uri
+     *      The URI with leading slash after `/api/v1`
      *
-     * @param array $request_data Optional Post Body array
+     * @param array $request_data
+     *      Optional Post Body array
      *
-     * @return object See parseApiResponse() method. The content and
-     *      schema of the object and json arrays can be found in the REST API
-     *      documentation for the specific endpoint.
+     * @return object
+     *      See parseApiResponse() method. The content and schema of the object and json arrays can be found in the REST
+     *      API documentation for the specific endpoint.
      */
     public function post(string $uri, array $request_data = []): object
     {
@@ -426,13 +410,15 @@ class ApiClient
      * ]);
      * ```
      *
-     * @param string $uri The URI with leading slash after `/api/v1`
+     * @param string $uri
+     *      The URI with leading slash after `/api/v1`
      *
-     * @param array $request_data Optional request data to send with PUT request
+     * @param array $request_data
+     *      Optional request data to send with PUT request
      *
-     * @return object See parseApiResponse() method. The content and
-     *      schema of the object and json arrays can be found in the REST API
-     *      documentation for the specific endpoint.
+     * @return object
+     *      See parseApiResponse() method. The content and schema of the object and json arrays can be found in the REST
+     *      API documentation for the specific endpoint.
      */
     public function put(string $uri, array $request_data = []): object
     {
@@ -453,8 +439,7 @@ class ApiClient
     /**
      * Okta API DELETE Request
      *
-     * This method is called from other services to perform a DELETE request and
-     * return a structured object.
+     * This method is called from other services to perform a DELETE request and return a structured object.
      *
      * Example Usage:
      * ```php
@@ -494,9 +479,8 @@ class ApiClient
     /**
      * Convert API Response Headers to Object
      *
-     * This method is called from the parseApiResponse method to prettify the
-     * Guzzle Headers that are an array with nested array for each value, and
-     * converts the single array values into strings and converts to an object for
+     * This method is called from the parseApiResponse method to prettify the Guzzle Headers that are an array with
+     * nested array for each value, and converts the single array values into strings and converts to an object for
      * easier and consistent accessibility with the parseApiResponse format.
      *
      * @param array $header_response
@@ -563,29 +547,34 @@ class ApiClient
     /**
      * Check if the responses uses pagination and contains multiple pages
      *
-     * @param array $headers API response headers from Okta request or parsed response.
+     * If a 'link' header exists, then there is another page to loop
+     * <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
      *
-     * @return bool True if the response requires multiple pages | False if response is a single page
+     * @param array $headers
+     *      API response headers from Okta request or parsed response.
+     *
+     * @return bool
+     *      True if the response requires multiple pages
+     *      False if response is a single page
      */
     public function checkForPagination(array $headers): bool
     {
-        // If a 'link' header exists, then there is another page to loop
-        // <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
-        if (array_key_exists('link', $headers)) {
-            if (is_array($headers['link'])) {
-                foreach ($headers['link'] as $link_key => $link_url) {
-                    if (Str::contains($link_url, 'next')) {
-                        return true;
-                    }
+        if (array_key_exists('link', $headers) && is_array($headers['link'])) {
+            foreach ($headers['link'] as $link_key => $link_url) {
+                if (Str::contains($link_url, 'next')) {
+                    return true;
                 }
             }
         }
+
         return false;
     }
 
     /**
      * Parse the header array for the paginated URL that contains `next`.
      *
+     * If a 'link' header exists, then there is another page to loop
+     * <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
      * Note: The Okta SDK uses a cursor pagination instead of page navigation.
      *
      * @see https://developer.okta.com/docs/reference/core-okta-api/#pagination
@@ -596,8 +585,6 @@ class ApiClient
      */
     public function generateNextPaginatedResultUrl(array $headers): ?string
     {
-        // If a 'link' header exists, then there is another page to loop
-        // <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
         if (array_key_exists('link', $headers)) {
             foreach ($headers['link'] as $link_key => $link_url) {
                 if (Str::contains($link_url, 'next')) {
@@ -610,12 +597,9 @@ class ApiClient
                     return $url;
                 }
             }
-
-            // If no links contain next, return null result
-            return null;
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -631,20 +615,20 @@ class ApiClient
      * @param string $paginated_url
      *      The paginated URL
      *
-     * @param array $request_data Optional query data to apply to GET request
+     * @param array $request_data
+     *      Optional query data to apply to GET request
      *
-     * @return array An array of the response objects for each page combined.
+     * @return array
+     *      An array of the response objects for each page combined.
      */
     public function getPaginatedResults(string $paginated_url, array $request_data = []): array
     {
         // Define empty array for adding API results to
         $records = [];
 
-        // Perform API calls while $api_url is not null
         do {
-            // Get the results from the API. The conditional ensures that the
-            // request data doesn't overwrite the pagination cursor.
-            if($request_data != []) {
+            // Get the results from the API. This ensures that the request data doesn't overwrite the pagination cursor.
+            if ($request_data != []) {
                 $request = Http::withHeaders($this->request_headers)
                     ->get($paginated_url, $request_data);
             } else {
@@ -655,8 +639,7 @@ class ApiClient
             $response = $this->parseApiResponse($request);
             $this->logResponse('get', $paginated_url, $response);
 
-            // Loop through each object from the response and add it to
-            // the $records array
+            // Loop through each object from the response and add it to the $records array
             foreach ($response->object as $api_record) {
                 $records[] = $api_record;
             }
@@ -668,8 +651,7 @@ class ApiClient
                 $paginated_url = null;
             }
 
-            // Set request data to null after first iteration since it is now
-            // embedded in the response header URL
+            // Set request data to null after first iteration since it is now embedded in the response header URL
             $request_data = [];
         } while ($paginated_url != null);
 
@@ -679,10 +661,11 @@ class ApiClient
     /**
      * Convert paginated API response array into an object
      *
-     * @param array $paginatedResponse Combined object returns from multiple pages of
-     * API responses.
+     * @param array $paginatedResponse
+     *      Combined object returns from multiple pages of API responses.
      *
-     * @return object Object of the API responses combined.
+     * @return object
+     *      Object of the API responses combined.
      */
     public function convertPaginatedResponseToObject(array $paginatedResponse): object
     {
@@ -691,6 +674,7 @@ class ApiClient
         foreach ($paginatedResponse as $response_key => $response_value) {
             $results[$response_key] = $response_value;
         }
+
         return (object) $results;
     }
 
@@ -699,9 +683,10 @@ class ApiClient
      *
      * @see https://laravel.com/docs/8.x/http-client#making-requests
      *
-     * @param object $response Response object from API results
+     * @param object $response
+     *      Response object from API results
      *
-     * @return object Custom response returned for consistency
+     * @return object
      *  {
      *    +"headers": [
      *      "Date" => "Fri, 12 Nov 2021 20:13:55 GMT",
@@ -758,11 +743,13 @@ class ApiClient
      *
      * @param \Illuminate\Http\Client\RequestException $exception An instance of the exception
      *
-     * @param string $log_class get_class()
+     * @param string $log_class
+     *      get_class()
      *
-     * @param string $reference Reference slug or identifier
+     * @param string $reference
+     *      Reference slug or identifier
      *
-     * @return object Custom response returned for consistency
+     * @return object
      *  {
      *    +"error": {
      *      +"code": "<string>"
