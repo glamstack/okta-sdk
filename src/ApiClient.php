@@ -158,7 +158,7 @@ class ApiClient
      *
      * Define an array in the class using the connection configuration in the
      * okta-sdk.php connections array. If connection key is not specified,
-     * an error log will be created and a 501 abort error will be thrown.
+     * an error log will be created and a 501 exception will be thrown.
      *
      * @param array $custom_configuration
      *      Custom configuration array for SDK initialization
@@ -185,7 +185,7 @@ class ApiClient
                     'connection_key' => $this->connection_key,
                 ]);
 
-            abort(501, $error_message);
+            throw new \Exception($error_message, 501);
         }
     }
 
@@ -216,7 +216,7 @@ class ApiClient
                     'connection_key' => $this->connection_key,
                 ]);
 
-            abort(501, $error_message);
+            throw new \Exception($error_message, 501);
         }
     }
 
@@ -251,7 +251,7 @@ class ApiClient
                     'connection_key' => $this->connection_key,
                 ]);
 
-            abort(501, $error_message);
+            throw new \Exception($error_message, 501);
         }
     }
 
@@ -308,7 +308,7 @@ class ApiClient
             } else {
                 $error_message = 'The Okta API connection test failed for an unknown reason. See logs for details.';
             }
-            abort($response->status->code, $error_message);
+            throw new \Exception($error_message, $response->status->code);
         }
     }
 
