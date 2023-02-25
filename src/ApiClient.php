@@ -3,6 +3,7 @@
 namespace GitlabIt\Okta;
 
 use GitlabIt\Okta\Traits\ResponseLog;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -363,7 +364,7 @@ class ApiClient
             }
 
             return $response;
-        } catch (\Illuminate\Http\Client\RequestException $exception) {
+        } catch (RequestException $exception) {
             return $this->handleException($exception, get_class(), $uri);
         }
     }
@@ -404,7 +405,7 @@ class ApiClient
             $this->logResponse('post', $this->base_url . $uri, $response);
 
             return $response;
-        } catch (\Illuminate\Http\Client\RequestException $exception) {
+        } catch (RequestException $exception) {
             return $this->handleException($exception, get_class(), $uri);
         }
     }
@@ -445,7 +446,7 @@ class ApiClient
             $this->logResponse('put', $this->base_url . $uri, $response);
 
             return $response;
-        } catch (\Illuminate\Http\Client\RequestException $exception) {
+        } catch (RequestException $exception) {
             return $this->handleException($exception, get_class(), $uri);
         }
     }
@@ -486,7 +487,7 @@ class ApiClient
             $this->logResponse('delete', $this->base_url . $uri, $response);
 
             return $response;
-        } catch (\Illuminate\Http\Client\RequestException $exception) {
+        } catch (RequestException $exception) {
             return $this->handleException($exception, get_class(), $uri);
         }
     }
@@ -778,7 +779,7 @@ class ApiClient
      *      +"clientError": true
      *   }
      */
-    public function handleException($exception, $log_class, $reference)
+    public function handleException(RequestException $exception, $log_class, $reference)
     {
         Log::stack((array) $this->connection_config['log_channels'])
             ->error($exception->getMessage(), [
