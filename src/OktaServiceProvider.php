@@ -11,11 +11,12 @@ class OktaServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->bootRoutes();
+        $this->publishConfigFile();
     }
 
     public function register()
     {
-        $this->registerConfig();
+        $this->mergeConfig();
         $this->registerServices();
     }
 
@@ -29,32 +30,28 @@ class OktaServiceProvider extends ServiceProvider
         //$this->loadRoutesFrom(__DIR__.'/Routes/console.php');
     }
 
-    protected function registerConfig(): void
+    /**
+     * Merge package config file into application config file
+     *
+     * This allows users to override any module configuration values with their
+     * own values in the application config file.
+     */
+    protected function mergeConfig(): void
     {
-        //
-        // Merge config file into application config
-        //
-        // This allows users to override any module configuration values with
-        // their own values in the application config file.
-        //
-        $this->mergeConfigFrom(
-            __DIR__ . '/Config/okta-sdk.php',
-            'okta-sdk'
-        );
+        $this->mergeConfigFrom(__DIR__ . '/Config/okta-sdk.php', 'okta-sdk');
+    }
 
-        if (! $this->app->runningInConsole()) {
-            return;
+    /**
+     * Publish config file to application
+     *
+     * Once the `php artisan vendor::publish` command is run, you can use the
+     * configuration file values `$value = config('okta-sdk.option');`
+     */
+    protected function publishConfigFile(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->publishes([__DIR__ . '/Config/okta-sdk.php' => config_path('okta-sdk.php')], 'okta-sdk');
         }
-
-        //
-        // Publish config file to application
-        //
-        // Once the `php artisan vendor::publish` command is run, you can use
-        // the configuration file values `$value = config('okta-sdk.option');`
-        //
-        $this->publishes([
-            __DIR__ . '/Config/okta-sdk.php' => config_path('okta-sdk.php'),
-        ], 'okta-sdk');
     }
 
     /**
@@ -64,14 +61,12 @@ class OktaServiceProvider extends ServiceProvider
      */
     protected function registerServices()
     {
-        if (! property_exists($this, 'serviceBindings')) {
-            return;
-        }
-
-        foreach ($this->serviceBindings as $key => $value) {
-            is_numeric($key)
-                    ? $this->app->singleton($value)
-                    : $this->app->singleton($key, $value);
+        if (property_exists($this, 'serviceBindings')) {
+            foreach ($this->serviceBindings as $key => $value) {
+                is_numeric($key)
+                        ? $this->app->singleton($value)
+                        : $this->app->singleton($key, $value);
+            }
         }
     }
 }
