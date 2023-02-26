@@ -941,6 +941,35 @@ $okta_api->get('/groups');
 [2022-01-31 23:44:04] local.CRITICAL: The Base URL for this Okta connection key is not defined in `config/okta-sdk.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with. {"event_type":"okta-api-config-missing-error","class":"GitlabIt\\Okta\\ApiClient","status_code":"501","message":"The Base URL for this Okta connection key is not defined in `config/okta-sdk.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with.","connection_key":"test"}
 ```
 
+### Rate Limits
+
+Most rate limits are hit due to pagination with large responses (ex. `/users` endpoint). If you have a large dataset, you may want to consider using `search` query to filter results to a smaller number of results.
+
+If the Okta rate limit is exceeded for an endpoint, a new `\Exception` will be thrown with the message `Okta API rate limit exceeded`. The logs will show warnings for rate limits when 10% of rate limit is remaining.
+
+Most rate limits are per minute, so you may need to add `sleep(#)` to your code to slow down your request, or consider a more efficient way to make API requests. Some endpoints allow you to set a custom per page `limit` value. The maximum value can be found in the Okta API documentation for the endpoint (varies depending on the endpoint).
+
+```
+[2023-02-26 18:04:18] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"5","status_code":200}
+[2023-02-26 18:04:18] local.WARNING: 10 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"10 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"5","okta_rate_limit_limit":"50","okta_rate_limit_percent":10.0,"status_code":200}
+
+[2023-02-26 18:04:18] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"4","status_code":200}
+[2023-02-26 18:04:18] local.WARNING: 8 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"8 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"4","okta_rate_limit_limit":"50","okta_rate_limit_percent":8.0,"status_code":200}
+
+[2023-02-26 18:04:19] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"3","status_code":200}
+[2023-02-26 18:04:19] local.WARNING: 6 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"6 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"3","okta_rate_limit_limit":"50","okta_rate_limit_percent":6.0,"status_code":200}
+
+[2023-02-26 18:04:19] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"2","status_code":200}
+[2023-02-26 18:04:19] local.WARNING: 4 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"4 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"2","okta_rate_limit_limit":"50","okta_rate_limit_percent":4.0,"status_code":200}
+
+[2023-02-26 18:04:20] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"1","status_code":200}
+[2023-02-26 18:04:20] local.WARNING: 2 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"2 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"1","okta_rate_limit_limit":"50","okta_rate_limit_percent":2.0,"status_code":200}
+
+[2023-02-26 18:04:20] local.ERROR: Okta API rate limit exceeded {"event_type":"okta-api-rate-limit-exceeded","class":"GitlabIt\\Okta\\ApiClient","status_code":200,"message":"Okta API rate limit exceeded","api_method":"GET","api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","connection_key":"dev","okta_request_id":"<string>","okta_rate_limit_remaining":"1","okta_rate_limit_limit":"50"}
+```
+
+The exception is thrown at the same time as the last log entry `Okta API rate limit exceeded` in this example.
+
 ## Issue Tracking and Bug Reports
 
 > **Disclaimer:** This is not an official package maintained by the GitLab or Okta product and development teams. This is an internal tool that we use in the GitLab IT department that we have open sourced as part of our company values.
