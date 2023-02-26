@@ -233,6 +233,8 @@ trait ResponseLog
                         'okta_rate_limit_remaining' => $response->headers['x-rate-limit-remaining'] ?? null,
                         'okta_rate_limit_limit' => $response->headers['x-rate-limit-limit'] ?? null,
                     ]);
+
+                throw new \Exception($message, 429);
             }
         }
     }
