@@ -6,19 +6,49 @@ Please consider these to be guidelines. If in doubt, please create an issue and 
 
 ## Feature Requests and Ideas
 
-Please [create an issue](https://gitlab.com/gitlab-it/okta-sdk/-/issues) and describe what you'd like to see. Since this project is designed as an internal tool, we will help where we can but no guarantees.
+> **Disclaimer:** This is not an official package maintained by the GitLab or Okta product and development teams. This is an internal tool that we use in the GitLab IT department that we have open sourced as part of our company values.
+>
+> Please use at your own risk and create merge requests for any bugs that you encounter.
+
+We do not maintain a roadmap of community feature requests, however we invite you to contribute and we will gladly review your merge requests.
+
+For GitLab team members, please create an issue in [gitlab-it/okta-sdk](https://gitlab.com/gitlab-it/okta-sdk/okta-sdk/-/issues) (public) or [gitlab-com/it/dev/issue-tracker](https://gitlab.com/gitlab-com/it/dev/issue-tracker) (confidential).
 
 ## Code Contributions
 
-Please create an issue first to document the purpose of the contribution from a changelog and release notes perspective. After the issue is created, create a merge request from inside the issue, then checkout the branch that was created automatically for the issue and merge request. By creating the merge request from inside the issue, everything stays connected automatically and there are no name disparities.
+We have transitioned from issue-first to MR-first development. We will create an issue for any deferred work, however you can start contributing by creating a new `feature/*` or `hotfix/*` branch and create a merge request.
 
 Before assigning your MR to a maintainer, please review the pipeline CI job outputs for any errors and fix anything that appears.
 
-All merge requests can be assigned to one or all of the maintainers at your discretion. It is helpful to comment in the issue when you're ready to merge with any context that the maintainer/reviewer should know or be on the look out for.
+All merge requests can be assigned to one or all of the maintainers at your discretion. It is helpful to add a comment with any context that the maintainer/reviewer should know or be on the look out for.
 
-## Environment Configuration
+### Laravel Test Application
 
-### Configuring Your Development Environment with Working Copies of Packages
+You can create a new Laravel application for a specific version to perform local testing with. This allows you to easily use Tinkerwell for each
+respective Laravel version.
+
+```bash
+# Set temporary environment variable
+export SDK_LARAVEL_VERSION=10
+cd ~/Sites
+# Create new Laravel projects
+composer create-project laravel/laravel:^${SDK_LARAVEL_VERSION}.0 laravel${SDK_LARAVEL_VERSION}-pkg-test
+# Create sylinks in directory
+mkdir -p laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/gitlab-it
+ln -s ~/Sites/okta-sdk ~/Sites/laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/gitlab-it/okta-sdk
+# Custom repository location configuration
+cd ~/Sites/laravel${SDK_LARAVEL_VERSION}-pkg-test
+sed -i '.bak' -e 's/seeders\/"/&,\n            "GitlabIt\\\\Okta\\\\": "packages\/gitlab-it\/okta-sdk\/src"/g' composer.json
+composer config repositories.okta-sdk '{"type": "path", "url": "packages/gitlab-it/okta-sdk"}' --file composer.json
+composer require gitlab-it/okta-sdk:dev-main
+php artisan vendor:publish --tag=okta-sdk
+# Unset temporary environment variable
+unset SDK_LARAVEL_VERSION
+```
+
+## Custom Application Configuration
+
+### Configuring Your Application with Working Copies of Packages
 
 When you run `composer install`, you will get the latest copy of the packages from the GitHub and GitLab repositories. However, you won't be able to see real-time changes if you change any code in the packages.
 

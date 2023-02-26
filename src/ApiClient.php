@@ -574,9 +574,8 @@ class ApiClient
     /**
      * Parse the header array for the paginated URL that contains `next`.
      *
-     * If a 'link' header exists, then there is another page to loop
+     * Okta uses a cursor pagination instead of page navigation. If a 'link' header exists, then there is another page
      * <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
-     * Note: The Okta SDK uses a cursor pagination instead of page navigation.
      *
      * @see https://developer.okta.com/docs/reference/core-okta-api/#pagination
      *
