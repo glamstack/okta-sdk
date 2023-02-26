@@ -27,7 +27,7 @@ trait ResponseLog
     public function logResponse(string $method, string $url, object $response): void
     {
         // Status code log messages (2xx, 4xx, 5xx)
-        if ($response->status->ok == true) {
+        if ($response->status->successful == true) {
             $this->logInfo($method, $url, $response);
         } elseif ($response->status->clientError == true) {
             $this->logClientError($method, $url, $response);
