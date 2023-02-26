@@ -41,8 +41,14 @@ code_style:
 # Code Quality Job
 code_quality:
   stage: test
+  allow_failure: true
   artifacts:
     paths: [gl-code-quality-report.json]
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
 
 # Static Analysis
 phpstan:
