@@ -16,9 +16,33 @@ Before assigning your MR to a maintainer, please review the pipeline CI job outp
 
 All merge requests can be assigned to one or all of the maintainers at your discretion. It is helpful to comment in the issue when you're ready to merge with any context that the maintainer/reviewer should know or be on the look out for.
 
-## Environment Configuration
+### Laravel Test Application
 
-### Configuring Your Development Environment with Working Copies of Packages
+You can create a new Laravel application for a specific version to perform local testing with. This allows you to easily use Tinkerwell for each
+respective Laravel version.
+
+```bash
+# Set temporary environment variable
+export SDK_LARAVEL_VERSION=10
+cd ~/Sites
+# Create new Laravel projects
+composer create-project laravel/laravel:^${SDK_LARAVEL_VERSION}.0 laravel${SDK_LARAVEL_VERSION}-pkg-test
+# Create sylinks in directory
+mkdir -p laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/gitlab-it
+ln -s ~/Sites/okta-sdk ~/Sites/laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/gitlab-it/okta-sdk
+# Custom repository location configuration
+cd ~/Sites/laravel${SDK_LARAVEL_VERSION}-pkg-test
+sed -i '.bak' -e 's/seeders\/"/&,\n            "GitlabIt\\\\Okta\\\\": "packages\/gitlab-it\/okta-sdk\/src"/g' composer.json
+composer config repositories.okta-sdk '{"type": "path", "url": "packages/gitlab-it/okta-sdk"}' --file composer.json
+composer require gitlab-it/okta-sdk:dev-main
+php artisan vendor:publish --tag=okta-sdk
+# Unset temporary environment variable
+unset SDK_LARAVEL_VERSION
+```
+
+## Custom Application Configuration
+
+### Configuring Your Application with Working Copies of Packages
 
 When you run `composer install`, you will get the latest copy of the packages from the GitHub and GitLab repositories. However, you won't be able to see real-time changes if you change any code in the packages.
 
