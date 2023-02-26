@@ -825,7 +825,27 @@ $group->status->code;
 
 All Okta API responses are returned from the SDK to your application without throwing an exception if there is an error. If you need to check for a successful result, use the `$response->status->successful` boolean.
 
-See the [Okta Error Codes](https://developer.okta.com/docs/reference/error-codes/) for more details.
+### Okta Error Codes
+
+If request is not successful, the standard [Okta Error Code](https://developer.okta.com/docs/reference/error-codes/) response will be returned in the object.
+
+```json
++"object": {#1344
+    +"errorCode": "E0000003"
+    +"errorSummary": "The request body was not well-formed."
+    +"errorLink": "E0000003"
+    +"errorId": "<string>"
+    +"errorCauses": []
+}
++"status": {#1369
+    +"code": 400
+    +"ok": false
+    +"successful": false
+    +"failed": true
+    +"serverError": false
+    +"clientError": true
+}
+```
 
 ### Catching Status Codes
 
@@ -852,7 +872,7 @@ You can also use a conditional statement to handle a successful and failed respo
 if($group->status->successful) {
     dd('Group Saved - ID ' . $group->object->id);
 } else {
-    dd('Group Could Not Be Saved - Reason: ' . $group->object->message);
+    dd('Group Could Not Be Saved - Reason: ' . $group->object->errorSummary);
 }
 ```
 
@@ -877,7 +897,7 @@ If an `\Illuminate\Http\Client\RequestException` exception is thrown by Guzzle, 
 
 If there is an SDK configuration or authentication error, a new `\Exception` will be thrown with the error message.
 
-See the [Log Outputs](#log-outputs) below for how the SDK handles errors and logging.
+See the [Log Outputs](#log-outputs) below for how the SDK handles configuration errors.
 
 See the [Okta API error codes documentation](https://developer.okta.com/docs/reference/error-codes/) to learn more about the codes that can be returned. More information on each resource endpoint can be found on the respective [API documentation page](https://developer.okta.com/docs/reference/core-okta-api/).
 
