@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Okta SDK is an open source [Composer](https://getcomposer.org/) package created by [GitLab IT Engineering](https://about.gitlab.com/handbook/business-technology/engineering/) for use in internal Laravel applications for connecting to Okta for provisioning and deprovisioning of users, groups, applications, and other related functionality.
+The Okta SDK is an open source [Composer](https://getcomposer.org/) package created by [GitLab IT Engineering](https://about.gitlab.com/handbook/it/engineering/dev/) for use in internal Laravel applications for connecting to Okta for provisioning and deprovisioning of users, groups, applications, and other related functionality.
 
 > **Disclaimer:** This is not an official package maintained by the GitLab or Okta product and development teams. This is an internal tool that we use in the GitLab IT department that we have open sourced as part of our company values.
 >
@@ -14,7 +14,7 @@ The Okta SDK is an open source [Composer](https://getcomposer.org/) package crea
 
 ### v2 to v3 Upgrade Guide
 
-There are several breaking changes with v3.0 in November 2022. See the [v3.0 changelog](changelog/3.0.md) to learn more.
+There are several breaking changes with v3.0. See the [v3.0 changelog](changelog/3.0.md) to learn more.
 
 #### What's Changed
 
@@ -48,8 +48,13 @@ Instead of providing a method for every endpoint in the API documentation, we ha
 
 This builds upon the simplicity of the [Laravel HTTP Client](https://laravel.com/docs/8.x/http-client) that is powered by the [Guzzle HTTP client](http://docs.guzzlephp.org/en/stable/) to provide "last lines of code parsing" for Okta API responses to improve the developer experience.
 
+The examples below are a getting started guide. See the [API Requests](#api-requests) and [API Responses](#api-responses) section below for more details.
+
 ```php
-// Initialize the SDK
+// Option 1. Initialize the SDK using the default connection
+$okta_api = new \GitlabIt\Okta\ApiClient();
+
+// Option 2. Initialize the SDK using a specific hard coded connection
 $okta_api = new \GitlabIt\Okta\ApiClient('prod');
 
 // Get a list of records
@@ -57,17 +62,15 @@ $okta_api = new \GitlabIt\Okta\ApiClient('prod');
 $groups = $okta_api->get('/groups');
 
 // Search for records with a specific name
-// https://developer.okta.com/docs/reference/api/groups/#list-groups
 // https://developer.okta.com/docs/reference/core-okta-api/#filter
+// https://developer.okta.com/docs/reference/api/groups/#list-groups-with-search
 $groups = $okta_api->get('/groups', [
-    'q' => 'Hack the Planet Engineers'
+    'search' => 'profile.name eq "Hack the Planet Engineers"'
 ]);
 
-// Search for records with a keyword across most metadata fields
-// https://developer.okta.com/docs/reference/api/users/#list-users
-// https://developer.okta.com/docs/reference/core-okta-api/#filter
+// https://developer.okta.com/docs/reference/api/users/#list-users-with-search
 $users = $okta_api->get('/users', [
-    'filter' => 'firstName eq "Dade"'
+    'search' => 'profile.firstName eq "Dade"'
 ]);
 
 // Get a specific record
@@ -94,22 +97,20 @@ $group_id = '0oa1ab2c3D4E5F6G7h8i';
 $record = $okta_api->delete('/groups/' . $group_id);
 ```
 
-See the [API Requests](#api-requests) and [API Responses](#api-responses) section below for more details.
-
 ## Installation
 
 ### Requirements
 
-| Requirement | Version |
-|-------------|---------|
-| PHP         | >=8.0   |
-| Laravel     | >=8.0   |
+| Requirement | Version                 |
+|-------------|-------------------------|
+| PHP         | `^8.0`, `^8.1`, `^8.2`  |
+| Laravel     | `^8.0`, `^9.0`, `^10.0` |
 
 ### Add Composer Package
 
 > Still Using `glamstack/okta-sdk` (v2.x)? See the [v3.0 Upgrade Guide](#v2-to-v3-upgrade-guide) for instructions to upgrade to `gitlab-it/okta-sdk:^3.0`.
 
-```bash
+```
 composer require gitlab-it/okta-sdk:^3.0
 ```
 
@@ -119,7 +120,7 @@ If you are contributing to this package, see [CONTRIBUTING.md](CONTRIBUTING.md) 
 
 This command should only be run the first time that you use this package. You will override any custom configuration if you run this command again if you do not back up your old config file.
 
-```bash
+```
 php artisan vendor:publish --tag=okta-sdk
 ```
 
@@ -129,7 +130,7 @@ php artisan vendor:publish --tag=okta-sdk
 
 To get started, add the following variables to your `.env` file. You can add these anywhere in the file on a new line, or add to the bottom of the file (your choice).
 
-```bash
+```
 # .env
 
 OKTA_DEFAULT_CONNECTION="dev"
@@ -203,11 +204,11 @@ See the [Okta documentation](https://developer.okta.com/docs/guides/create-an-ap
 
 #### Default Global Connection
 
-By default, the SDK will use the `prod` connection key for all API calls across your application unless you override the default connection to a different **_connection key_** using the `OKTA_DEFAULT_CONNECTION` variable.
+By default, the SDK will use the `dev` connection key for all API calls across your application unless you override the default connection to a different **_connection key_** using the `OKTA_DEFAULT_CONNECTION` variable.
 
-If you're just getting started, you should set this to `dev`. You can change this to `preview` or `prod` later when deploying your application to staging or production environments.
+If you're just getting started, it is recommended to leave this at `dev` so you can use this SDK with your [Okta developer account](https://developer.okta.com/signup/). You can change this to `preview` or `prod` later when deploying your application to staging or production environments.
 
-```bash
+```
 OKTA_DEFAULT_CONNECTION="dev"
 ```
 
@@ -217,7 +218,7 @@ You can use any combination of `prod`, `preview`, or `dev` connection keys. Be s
 
 Simply leave any unused connections blank or remove them from your `.env` file. You can always add them later.
 
-```bash
+```
 # .env
 
 OKTA_DEFAULT_CONNECTION="dev"
@@ -231,7 +232,7 @@ OKTA_PROD_API_TOKEN="YourProdT0k3nG0esH3r3"
 
 ## Initializing the API Connection
 
-To use the default connection, you do **_not_** need to provide the **_connection key_** to the `ApiClient`. This allows you to code your application without hard coding a connection key and simply update the `.env` variable.
+To use the default connection, you do **_not_** need to provide the **_connection key_** to the `ApiClient`. This allows you to build your application without hard coding a connection key and simply update the `.env` variable.
 
 ```php
 // Initialize the SDK
@@ -545,7 +546,7 @@ $record = $okta_api->put('/groups/' . $group_id, [
 
 The `delete()` method is used for methods that will destroy the resource based on the ID that you provide.
 
-Keep in mind that `delete()` methods will return different status codes depending on the vendor (ex. 200, 201, 202, 204, etc). Okta's API will return a `204` status code for successfully deleted resources.
+Keep in mind that `delete()` methods will return different status codes depending on the vendor (ex. 200, 201, 202, 204, etc). Okta's API will return a `204` status code for successfully deleted resources. You should use the `$response->status->successful` boolean for checking results.
 
 ```php
 // Delete a group
@@ -567,9 +568,14 @@ class OktaGroupService
 {
     protected $okta_api;
 
-    public function __construct($connection_key = 'prod')
+    public function __construct($connection_key = null)
     {
-        $this->$okta_api = new \GitlabIt\Okta\ApiClient($connection_key);
+        // If connection key is null, use the default connection key
+        if(! $connection_key) {
+            $connection_key = config('okta-sdk.auth.default_connection');
+        }
+
+        $this->$okta_api = new ApiClient($connection_key);
     }
 
     public function listGroups($query = [])
@@ -601,6 +607,9 @@ class OktaGroupService
 
         // To return a bool with the status of the form request
         // return $group->status->successful;
+
+        // To throw an exception if the request fails
+        // throw_if(!$group->status->successful, new \Exception($group->error->message, $group->status->code));
 
         // To return the entire API response with the object, json, headers, and status
         // return $group;
@@ -688,7 +697,7 @@ $group->headers;
 $content_type = $group->headers['Content-Type'];
 ```
 
-```bash
+```
 application/json
 ```
 
@@ -808,15 +817,65 @@ $group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
 $group->status->code;
 ```
 
-```bash
+```
 200
 ```
 
 ## Error Handling
 
-The HTTP status code for the API response is included in each log entry in the message and in the JSON `status_code`. Any internal SDK errors also include an equivalent status code depending on the type of error. The `message` includes the SDK friendly message.
+All Okta API responses are returned from the SDK to your application without throwing an exception if there is an error. If you need to check for a successful result, use the `$response->status->successful` boolean.
 
-If a `5xx` error is returned from the API, the `ApiClient` `handleException` method will return a response.
+See the [Okta Error Codes](https://developer.okta.com/docs/reference/error-codes/) for more details.
+
+### Catching Status Codes
+
+```php
+$group = $this->$okta_api->post('/groups', $request_data);
+```
+
+You can return a bool or the HTTP status code with the status of the form request. See the [API Response Status](#api-response-status) for other properties you can return.
+
+```php
+return $group->status->successful;
+return $group->status->code;
+```
+
+You can also throw an exception using `\Exception` or a custom exception in your application.
+
+```php
+throw_if(!$group->status->successful, new \Exception($group->error->message, $group->status->code));
+```
+
+You can also use a conditional statement to handle a successful and failed response.
+
+```php
+if($group->status->successful) {
+    dd('Group Saved - ID ' . $group->object->id);
+} else {
+    dd('Group Could Not Be Saved - Reason: ' . $group->object->message);
+}
+```
+
+If an `\Illuminate\Http\Client\RequestException` exception is thrown by Guzzle, the `object` and `json` properties will not be returned and an error object will included with more details about the exception to allow you to handle the error gracefully.
+
+```json
+{
++"error": {
+    +"code": "<string>"
+    +"message": "<string>"
+    +"reference": "<string>"
+}
++"status": {
+    +"code": 400
+    +"ok": false
+    +"successful": false
+    +"failed": true
+    +"serverError": false
+    +"clientError": true
+}
+```
+
+If there is an SDK configuration or authentication error, a new `\Exception` will be thrown with the error message.
 
 See the [Log Outputs](#log-outputs) below for how the SDK handles errors and logging.
 
@@ -824,7 +883,7 @@ See the [Okta API error codes documentation](https://developer.okta.com/docs/ref
 
 ## Log Outputs
 
-> The output of error messages is shown in the `README` to allow search engines to index these messages for developer debugging support. Any 5xx error messages will be returned as as `Symfony\Component\HttpKernel\Exception\HttpException` or configuration errors, including any errors in the `__construct()` method.
+> The output of error messages is shown in the `README` to allow search engines to index these messages for developer debugging support.
 
 ### Connection Configuration and Authentication
 
@@ -837,7 +896,7 @@ $okta_api->get('/groups');
 
 #### Valid API Token
 
-```json
+```
 [2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzENHYyWivKath4UvZhAAAAt8","rate_limit_remaining":"998","status_code":200}
 
 [2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzEC100RhpyNJdV3sEiAAABmQ","rate_limit_remaining":"499","status_code":200}
@@ -845,13 +904,13 @@ $okta_api->get('/groups');
 
 #### Missing API Token
 
-```json
+```
 [2022-01-31 23:40:26] local.CRITICAL: The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/okta-sdk.php`. Without this API token, you will not be able to performed authenticated API calls. {"event_type":"okta-api-config-missing-error","class":"GitlabIt\\Okta\\ApiClient","status_code":"501","message":"The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/okta-sdk.php`. Without this API token, you will not be able to performed authenticated API calls.","connection_key":"prod"}
 ```
 
 #### Invalid API Token
 
-```json
+```
 [2022-01-31 23:41:01] local.NOTICE: GET 401 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","event_type":"okta-api-response-client-error","message":"GET 401 https://gitlab.okta.com/api/v1/org","okta_request_id":"Yfhzjforta34Ho5ON3SqeQAADlY","okta_error_causes":[],"okta_error_code":"E0000011","okta_error_id":"oaepVpdl1ZQQO-U7Ki-e_-wHQ","okta_error_link":"E0000011","okta_error_summary":"Invalid token provided","rate_limit_remaining":null,"status_code":401}
 ```
 
@@ -862,7 +921,7 @@ $okta_api = new \GitlabIt\Okta\ApiClient('prod', '00fJq-A1b2C3d4E5f6G7h8I9J0-Kl-
 $okta_api->get('/groups');
 ```
 
-```json
+```
 [2022-01-31 23:42:04] local.NOTICE: The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used. {"event_type":"okta-api-config-override-notice","class":"GitlabIt\\Okta\\ApiClient","status_code":"203","message":"The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used.","okta_connection":"prod"}
 
 [2022-01-31 23:42:04] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzzDq5PIe70D1-C8HRHwAACdg","rate_limit_remaining":"999","status_code":200}
@@ -872,25 +931,25 @@ $okta_api->get('/groups');
 
 #### Missing Connection Configuration
 
-```json
+```
 [2022-01-31 23:43:03] local.CRITICAL: The Okta connection key is not defined in `config/okta-sdk.php` connections array. Without this array config, there is no URL or API token to connect with. {"event_type":"okta-api-config-missing-error","class":"GitlabIt\\Okta\\ApiClient","status_code":"501","message":"The Okta connection key is not defined in `config/okta-sdk.php` connections array. Without this array config, there is no URL or API token to connect with.","connection_key":"test"}
 ```
 
 #### Missing Base URL
 
-```json
+```
 [2022-01-31 23:44:04] local.CRITICAL: The Base URL for this Okta connection key is not defined in `config/okta-sdk.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with. {"event_type":"okta-api-config-missing-error","class":"GitlabIt\\Okta\\ApiClient","status_code":"501","message":"The Base URL for this Okta connection key is not defined in `config/okta-sdk.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with.","connection_key":"test"}
 ```
 
 ## Issue Tracking and Bug Reports
-
-Please visit our [issue tracker](https://gitlab.com/gitlab-it/okta-sdk/okta-sdk/-/issues) and create an issue or comment on an existing issue.
 
 > **Disclaimer:** This is not an official package maintained by the GitLab or Okta product and development teams. This is an internal tool that we use in the GitLab IT department that we have open sourced as part of our company values.
 >
 > Please use at your own risk and create merge requests for any bugs that you encounter.
 >
 > We do not maintain a roadmap of community feature requests, however we invite you to contribute and we will gladly review your merge requests.
+
+For GitLab team members, please create an issue in [gitlab-it/okta-sdk](https://gitlab.com/gitlab-it/okta-sdk/okta-sdk/-/issues) (public) or [gitlab-com/it/dev/issue-tracker](https://gitlab.com/gitlab-com/it/dev/issue-tracker) (confidential).
 
 ## Contributing
 
