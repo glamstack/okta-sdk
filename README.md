@@ -80,15 +80,19 @@ $record = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
 // Create a group
 // https://developer.okta.com/docs/reference/api/groups/#add-group
 $record = $okta_api->post('/groups', [
-    'name' => 'Hack the Planet Engineers',
-    'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+    'profile' => [
+        'name' => 'Hack the Planet Engineers',
+        'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+    ]
 ]);
 
 // Update a group
 // https://developer.okta.com/docs/reference/api/groups/#update-group
 $group_id = '0oa1ab2c3D4E5F6G7h8i';
 $record = $okta_api->put('/groups/' . $group_id, [
-    'description' => 'This group contains engineers that have liberated the garbage files.'
+    'profile' => [
+        'description' => 'This group contains engineers that have liberated the garbage files.'
+    ]
 ]);
 
 // Delete a group
@@ -522,8 +526,10 @@ You can learn more about request data in the [Laravel HTTP Client documentation]
 // Create a group
 // https://developer.okta.com/docs/reference/api/groups/#add-group
 $record = $okta_api->post('/groups', [
-    'name' => 'Hack the Planet Engineers',
-    'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+    'profile' => [
+        'name' => 'Hack the Planet Engineers',
+        'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+    ]
 ]);
 ```
 
@@ -538,7 +544,9 @@ In most applications, this will be a variable that you get from your database or
 // https://developer.okta.com/docs/reference/api/groups/#update-group
 $group_id = '0oa1ab2c3D4E5F6G7h8i';
 $record = $okta_api->put('/groups/' . $group_id, [
-    'description' => 'This group contains engineers that have liberated the garbage files.'
+    'profile' => [
+        'description' => 'This group contains engineers that have liberated the garbage files.'
+    ]
 ]);
 ```
 
