@@ -31,7 +31,7 @@ class ApiClient
             $this->setCustomConfiguration($connection_config);
         }
 
-        // Set the class api_scopes variable
+        // Set the class api_token variable
         $this->setApiToken();
 
         // Set the class base_url variable
@@ -60,7 +60,7 @@ class ApiClient
         // Set the class connection_key variable.
         $this->setConnectionKey($connection_key);
 
-        // Set the class connection_configuration variable
+        // Set the class connection_config variable
         $this->setConnectionConfig();
     }
 
@@ -148,7 +148,7 @@ class ApiClient
      * Set the connection_config class property array
      *
      * Define an array in the class using the connection configuration in the okta-sdk.php connections array. If
-     * connection key is not specified, an error log will be created and a 501 abort error will be thrown.
+     * connection key is not specified, an error log will be created and a 501 exception will be thrown.
      *
      * @param array $custom_configuration
      *      Custom configuration array for SDK initialization
