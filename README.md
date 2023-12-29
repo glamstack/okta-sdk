@@ -44,7 +44,7 @@ $users = ApiClient::get('users', [
 
 // Get a specific record
 // https://developer.okta.com/docs/reference/api/groups/#get-group
-$group = ApiClient::get('groups/0oa1ab2c3D4E5F6G7h8i');
+$group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
 
 // {
 //     +"id": "0og1ab2c3D4E5F6G7h8i",
@@ -77,7 +77,7 @@ $group = ApiClient::post(
 // Update a group
 // https://developer.okta.com/docs/reference/api/groups/#update-group
 // This example uses named arguments
-$group_id = '0oa1ab2c3D4E5F6G7h8i';
+$group_id = '00g1ab2c3D4E5F6G7h8i';
 $group = ApiClient::put(
     uri: 'groups/' . $group_id,
     data: [
@@ -89,7 +89,7 @@ $group = ApiClient::put(
 
 // Delete a group
 // https://developer.okta.com/docs/reference/api/groups/#remove-group
-$group_id = '0oa1ab2c3D4E5F6G7h8i';
+$group_id = '00g1ab2c3D4E5F6G7h8i';
 ApiClient::delete('groups/' . $group_id);
 ```
 
