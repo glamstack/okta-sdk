@@ -50,7 +50,10 @@ class OktaApiServiceProvider extends ServiceProvider
     protected function publishConfigFile(): void
     {
         if ($this->app->runningInConsole()) {
-            $this->publishes([__DIR__ . '/Config/okta-api-client.php' => config_path('okta-api-client.php')], 'okta-api-client');
+            $this->publishes(
+                [__DIR__ . '/Config/okta-api-client.php' => config_path('okta-api-client.php')],
+                'okta-api-client'
+            );
         }
     }
 
@@ -64,8 +67,8 @@ class OktaApiServiceProvider extends ServiceProvider
         if (property_exists($this, 'serviceBindings')) {
             foreach ($this->serviceBindings as $key => $value) {
                 is_numeric($key)
-                        ? $this->app->singleton($value)
-                        : $this->app->singleton($key, $value);
+                    ? $this->app->singleton($value)
+                    : $this->app->singleton($key, $value);
             }
         }
     }

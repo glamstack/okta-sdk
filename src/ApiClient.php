@@ -162,7 +162,7 @@ class ApiClient
         array $data = [],
         array $connection = [],
     ): object {
-        $connection = self::validateConnection($connection ?? config('okta-api-client'));
+        $connection = self::validateConnection($connection);
         $event_ms = now();
 
         try {
@@ -850,7 +850,12 @@ class ApiClient
             errors: $errors,
             event_ms: $event_ms,
             event_ms_per_record: $event_ms_per_record,
-            event_type: 'okta.api.' . explode('::', $method)[1] . '.' . $log_type[$response->status->code]['event_type'],
+            event_type: implode('.', [
+                'okta',
+                'api',
+                explode('::', $method)[1],
+                $log_type[$response->status->code]['event_type']
+            ]),
             level: $log_type[$response->status->code]['level'],
             message: $message,
             metadata: [
@@ -893,7 +898,7 @@ class ApiClient
      * @throws UnauthorizedException
      * @throws UnprocessableException
      */
-    protected function throwExceptionIfEnabled(
+    protected static function throwExceptionIfEnabled(
         string $method,
         string $url,
         object $response
@@ -913,7 +918,7 @@ class ApiClient
                 case 401:
                     $message = implode(' ', [
                         'The `OKTA_API_TOKEN` has been configured but is invalid.',
-                        '(Reason) This usually happens if it does not exist or has expired after 30 days of inactivity.',
+                        '(Reason) This usually happens if it does not exist or expired after 30 days of inactivity.',
                         '(Solution) Please generate a new API Token and update the variable in your `.env` file.'
                     ]);
                     throw new UnauthorizedException($message);
