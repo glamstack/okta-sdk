@@ -8,6 +8,8 @@ The Okta API Client is an open source [Composer](https://getcomposer.org/) packa
 
 This is maintained by the open source community and is not maintained by any company. Please use at your own risk and create merge requests for any bugs that you encounter.
 
+### Problem Statement
+
 Instead of providing an SDK method for every endpoint in the API documentation, we have taken a simpler approach by providing a universal `ApiClient` that can perform `GET`, `POST`, `PUT`, and `DELETE` requests to any endpoint that you find in the [Okta API documentation](https://developer.okta.com/docs/reference/core-okta-api/).
 
 This builds upon the simplicity of the [Laravel HTTP Client](https://laravel.com/docs/10.x/http-client) that is powered by the [Guzzle HTTP client](http://docs.guzzlephp.org/en/stable/) to provide "last lines of code parsing" for Okta API responses to improve the developer experience.
@@ -15,6 +17,8 @@ This builds upon the simplicity of the [Laravel HTTP Client](https://laravel.com
 The value of this API Client is that it handles the API request logging, response pagination, rate limit backoff, and 4xx/5xx exception handling for you.
 
 For a comprehensive SDK with pre-built [Laravel Actions](https://laravelactions.com/) for console commands, service class methods, dispatchable jobs, and API endpoints, see the [provisionesta/okta-laravel-actions](https://gitlab.com/provisionesta/okta-laravel-actions) package.
+
+### Example Usage
 
 ```php
 use Provisionesta\Okta\ApiClient;
@@ -302,7 +306,7 @@ class MyClass
 }
 ```
 
-#### Class Instantiation
+### Class Instantiation
 
 We transitioned to using static methods in v4.0 and you do not need to instantiate the ApiClient class.
 
@@ -314,9 +318,9 @@ ApiClient::put('groups/00g1ab2c3D4E5F6G7h8i', []);
 ApiClient::delete('groups/00g1ab2c3D4E5F6G7h8i');
 ```
 
-#### Named vs Positional Arguments
+### Named vs Positional Arguments
 
-You can use named arguments (latest best practice) or positional function arguments (legacy).
+You can use named arguments/parameters (introduced in PHP 8) or positional function arguments/parameters.
 
 It is recommended is to use named arguments if you are specifying request data and/or are using a connection array. You can use positional arguments if you are only specifying the URI.
 
@@ -714,11 +718,11 @@ $created_age_days = Carbon::parse($group->data->created)->diffInDays();
 // 265
 ```
 
-#### Parsing Responses with Laravel Collections
+#### Using Laravel Collections
 
 You can use [Laravel Collections](https://laravel.com/docs/10.x/collections#available-methods) which are powerful array helper tools that are similar to array searching and SQL queries that you may already be familiar with.
 
-See the [Parsing Responses with Laravel Collections](collections.md) documentation to learn more.
+See the [Parsing Responses with Laravel Collections](#parsing-responses-with-laravel-collections) documentation to learn more.
 
 ### Response Headers
 
@@ -795,6 +799,8 @@ $status_code = $group->status->code;
 
 An exception is thrown for any 4xx or 5xx responses. All responses are automatically logged.
 
+### Exceptions
+
 | Code | Exception Class                                             |
 |------|-------------------------------------------------------------|
 | 400  | `Provisionesta\Okta\Exceptions\BadRequestException`         |
@@ -805,6 +811,8 @@ An exception is thrown for any 4xx or 5xx responses. All responses are automatic
 | 422  | `Provisionesta\Okta\Exceptions\UnprocessableException`      |
 | 429  | `Provisionesta\Okta\Exceptions\RateLimitException`          |
 | 500  | `Provisionesta\Okta\Exceptions\ServerErrorException`        |
+
+### Catching Exceptions
 
 You can catch any exceptions that you want to handle silently. Any uncaught exceptions will appear for users and cause 500 errors that will appear in your monitoring software.
 
@@ -817,6 +825,14 @@ try {
     // Group is not found. You can create a log entry, throw an exception, or handle it another way.
     Log::error('Okta group could not be found', ['okta_group_id' => $group_id]);
 }
+```
+
+### Disabling Exceptions
+
+If you do not want exceptions to be thrown, you can globally disable exceptions for the Okta API Client and handle the status for each request yourself. Simply set the `OKTA_API_EXCEPTIONS=false` in your `.env` file.
+
+```php
+OKTA_API_EXCEPTIONS=false
 ```
 
 ## Parsing Responses with Laravel Collections
