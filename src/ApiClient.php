@@ -71,7 +71,11 @@ class ApiClient
                     method: __METHOD__,
                     transaction: true
                 );
-                throw new ConfigurationException('Okta API connection test failed. ' . $response->object->errorCode . ' - ' . $response->object->errorSummary);
+                throw new ConfigurationException(implode(' ', [
+                    'Okta API connection test failed.',
+                    $response->object->errorCode,
+                    $response->object->errorSummary,
+                ]));
             } else {
                 Log::create(
                     errors: [
@@ -84,7 +88,10 @@ class ApiClient
                     method: __METHOD__,
                     transaction: true
                 );
-                throw new ConfigurationException('Okta API connection test failed. Unknown reason. Status Code ' . $response->status->code);
+                throw new ConfigurationException(implode(' ', [
+                    'Okta API connection test failed.',
+                    'Unknown reason. Status Code ' . $response->status->code,
+                ]));
             }
         }
     }
@@ -147,7 +154,7 @@ class ApiClient
      *      uses the OKTA_API_* variables from your .env file.
      *
      * @return object
-     *      See parseApiResponse() method. The content and schema of the data 
+     *      See parseApiResponse() method. The content and schema of the data
      *      array can be found in the API documentation for the endpoint.
      */
     public static function get(
@@ -266,7 +273,7 @@ class ApiClient
      *      uses the OKTA_API_* variables from your .env file.
      *
      * @return object
-     *      See parseApiResponse() method. The content and schema of the data 
+     *      See parseApiResponse() method. The content and schema of the data
      *      array can be found in the API documentation for the endpoint.
      */
     public static function post(
@@ -339,7 +346,7 @@ class ApiClient
      *      uses the OKTA_API_* variables from your .env file.
      *
      * @return object
-     *      See parseApiResponse() method. The content and schema of the data 
+     *      See parseApiResponse() method. The content and schema of the data
      *      array can be found in the API documentation for the endpoint.
      */
     public static function put(
@@ -407,7 +414,7 @@ class ApiClient
      *      uses the OKTA_API_* variables from your .env file.
      *
      * @return object
-     *      See parseApiResponse() method. The content and schema of the data 
+     *      See parseApiResponse() method. The content and schema of the data
      *      array can be found in the API documentation for the endpoint.
      */
     public static function delete(
@@ -701,7 +708,7 @@ class ApiClient
      *
      * @see https://developer.okta.com/docs/reference/error-codes/
      *
-     * @param \Illuminate\Http\Client\RequestException $exception 
+     * @param \Illuminate\Http\Client\RequestException $exception
      *      An instance of the exception
      *
      * @param string $method
@@ -874,7 +881,7 @@ class ApiClient
      *
      * @param object $response
      *      The HTTP response formatted with $this->parseApiResponse()
-     * 
+     *
      * @throws BadRequestException
      * @throws ConflictException
      * @throws ForbiddenException
@@ -887,8 +894,8 @@ class ApiClient
      * @throws UnprocessableException
      */
     protected function throwExceptionIfEnabled(
-        string $method, 
-        string $url, 
+        string $method,
+        string $url,
         object $response
     ): void {
         if (config('okta-api-client.exceptions') == true) {
@@ -931,7 +938,7 @@ class ApiClient
     }
 
     /**
-     * Create a warning log entry and delay the API request by 10 seconds 
+     * Create a warning log entry and delay the API request by 10 seconds
      * if the rate limit remaining is less than 20 percent
      *
      * @param string $method
