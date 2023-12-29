@@ -1,301 +1,124 @@
 <?php
 
-namespace GitlabIt\Okta;
+/**
+ * @copyright Jefferson Martin
+ * @license MIT <https://spdx.org/licenses/MIT.html>
+ * @link https://gitlab.com/provisionesta/okta-api-client
+ */
 
-use GitlabIt\Okta\Traits\ResponseLog;
+namespace Provisionesta\Okta;
+
+use Carbon\Carbon;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Provisionesta\Audit\Log;
+use Provisionesta\Okta\Exceptions\BadRequestException;
+use Provisionesta\Okta\Exceptions\ConfigurationException;
+use Provisionesta\Okta\Exceptions\ConflictException;
+use Provisionesta\Okta\Exceptions\ForbiddenException;
+use Provisionesta\Okta\Exceptions\MethodNotAllowedException;
+use Provisionesta\Okta\Exceptions\NotFoundException;
+use Provisionesta\Okta\Exceptions\PreconditionFailedException;
+use Provisionesta\Okta\Exceptions\RateLimitException;
+use Provisionesta\Okta\Exceptions\ServerErrorException;
+use Provisionesta\Okta\Exceptions\UnauthorizedException;
+use Provisionesta\Okta\Exceptions\UnprocessableException;
 
 class ApiClient
 {
-    use ResponseLog;
+    /**
+     * Test the connection to the Okta API using a simple API endpoint
+     *
+     * @link https://developer.okta.com/docs/reference/api/org/#get-org-settings
+     *
+     * @param array $connection (optional)
+     *      An array with `url` and `token`.
+     *      If not set, the `config('okta-api-client')` array will be used that
+     *      uses the OKTA_API_* variables from your .env file.
+     *
+     * @throws ConfigurationException
+     */
+    public static function testConnection(array $connection = []): bool
+    {
+        $response = self::get(
+            uri: 'org',
+            connection: $connection
+        );
 
-    public const API_VERSION = 1;
-    public const REQUIRED_CONFIG_PARAMETERS = ['base_url', 'api_token', 'log_channels'];
-
-    private string $api_token;
-    private string $base_url;
-    private array $connection_config;
-    private string $connection_key;
-    private array $request_headers;
-
-    public function __construct(
-        string $connection_key = null,
-        array $connection_config = []
-    ) {
-        if (empty($connection_config)) {
-            $this->setConnectionKeyConfiguration($connection_key);
+        if ($response->status->ok) {
+            Log::create(
+                event_type: 'okta.api.test.success',
+                level: 'debug',
+                message: 'Success',
+                method: __METHOD__,
+                record_provider_id: $response->object->id,
+                transaction: false
+            );
+            return true;
         } else {
-            $this->setCustomConfiguration($connection_config);
-        }
-
-        // Set the class api_token variable
-        $this->setApiToken();
-
-        // Set the class base_url variable
-        $this->setBaseUrl();
-
-        // Set request headers
-        $this->setRequestHeaders();
-
-        // Test API Connection
-        $this->testConnection();
-    }
-
-    /**
-     * Set the configuration utilizing the `connection_key`
-     *
-     * This method will utilize the `connection_key` provided in the construct method. The `connection_key` will
-     * correspond to a `connection` in the configuration file.
-     *
-     * @param ?string $connection_key
-     *      The connection key to use for configuration.
-     *
-     * @return void
-     */
-    protected function setConnectionKeyConfiguration(?string $connection_key): void
-    {
-        // Set the class connection_key variable.
-        $this->setConnectionKey($connection_key);
-
-        // Set the class connection_config variable
-        $this->setConnectionConfig();
-    }
-
-    /**
-     * Set the configuration utilizing the `connection_config`
-     *
-     * This method will utilize the `connection_config` array provided in the construct method. The `connection_config`
-     * array keys will have to match the `REQUIRED_CONFIG_PARAMETERS` array
-     *
-     * @param array $connection_config
-     *      Array that contains the required parameters for the connection configuration
-     *
-     * @return void
-     */
-    protected function setCustomConfiguration(array $connection_config): void
-    {
-        // Validate that `$connection_config` has all required parameters
-        $this->validateConnectionConfigArray($connection_config);
-
-        // Set the connection key to `custom` and will be ignored for remainder of the SDK use
-        $this->setConnectionKey('custom');
-
-        // Set the connection_config array with the provided array
-        $this->setConnectionConfig($connection_config);
-    }
-
-    /**
-     * Validate that array keys in `REQUIRED_CONFIG_PARAMETERS` exists in the `connection_config`
-     *
-     * Loop through each of the required parameters in `REQUIRED_CONFIG_PARAMETERS` and verify that each of them are
-     * contained in the provided `connection_config` array. If there is a key missing an error will be logged.
-     *
-     * @param array $connection_config
-     *      The connection configuration array provided to the `construct` method.
-     *
-     * @return void
-     */
-    protected function validateConnectionConfigArray(array $connection_config): void
-    {
-        foreach (self::REQUIRED_CONFIG_PARAMETERS as $parameter) {
-            if (!array_key_exists($parameter, $connection_config)) {
-                $error_message = 'The Okta ' . $parameter . ' is not defined ' .
-                    'in the ApiClient construct connection_config array provided. ' .
-                    'This is a required parameter to be passed in not using the ' .
-                    'configuration file and connection_key initialization method.';
-            } else {
-                $error_message = 'The Okta SDK connection_config array provided ' .
-                    'in the ApiClient construct connection_config array ' .
-                    'size should be ' . count(self::REQUIRED_CONFIG_PARAMETERS) .
-                    'but ' . count($connection_config) . ' array keys were provided.';
-            }
-            Log::stack((array) config('okta-sdk.auth.log_channels'))
-                ->critical(
-                    $error_message,
-                    [
-                        'event_type' => 'okta-api-config-missing-error',
-                        'class' => get_class(),
-                        'status_code' => '501',
-                        'message' => $error_message,
-                        'connection_url' => $connection_config['base_url'],
-                    ]
-                );
-        }
-    }
-
-    /**
-     * Set the connection_key class property variable
-     *
-     * @param ?string $connection_key (Optional)
-     *      The connection key to use from config/okta-sdk.php. If not set, it will use the default connection set in
-     *      the OKTA_DEFAULT_CONNECTION `.env` variable or config/okta-sdk.php if not set.
-     *
-     * @return void
-     */
-    protected function setConnectionKey(string $connection_key = null): void
-    {
-        if ($connection_key == null) {
-            $this->connection_key = config('okta-sdk.auth.default_connection');
-        } else {
-            $this->connection_key = $connection_key;
-        }
-    }
-
-    /**
-     * Set the connection_config class property array
-     *
-     * Define an array in the class using the connection configuration in the okta-sdk.php connections array. If
-     * connection key is not specified, an error log will be created and a 501 exception will be thrown.
-     *
-     * @param array $custom_configuration
-     *      Custom configuration array for SDK initialization
-     *
-     * @return void
-     */
-    protected function setConnectionConfig(array $custom_configuration = []): void
-    {
-        if (array_key_exists($this->connection_key, config('okta-sdk.connections')) && empty($custom_configuration)) {
-            $this->connection_config = config('okta-sdk.connections.' . $this->connection_key);
-        } elseif ($custom_configuration) {
-            $this->connection_config = $custom_configuration;
-        } else {
-            $error_message = 'The Okta connection key is not defined in ' .
-                '`config/okta-sdk.php` connections array. Without this ' .
-                'array config, there is no URL or API token to connect with.';
-
-            Log::stack((array) config('okta-sdk.auth.log_channels'))
-                ->critical($error_message, [
-                    'event_type' => 'okta-api-config-missing-error',
-                    'class' => get_class(),
-                    'status_code' => '501',
-                    'message' => $error_message,
-                    'connection_key' => $this->connection_key,
-                ]);
-
-            throw new \Exception($error_message, 501);
-        }
-    }
-
-    /**
-     * Set the base_url class property variable
-     *
-     * The base_url variable will use the connection Base URL that is defined in `.env` variable or config/okta-sdk.php.
-     *
-     * @return void
-     */
-    protected function setBaseUrl(): void
-    {
-        if ($this->connection_config['base_url'] != null) {
-            $this->base_url = $this->connection_config['base_url'] . '/api/v' . self::API_VERSION;
-        } else {
-            $error_message = 'The Base URL for this Okta connection key ' .
-                'is not defined in `config/okta-sdk.php` or `.env` file. ' .
-                'Without this configuration (ex. `https://mycompany.okta.com`), ' .
-                'there is no URL to perform API calls with.';
-
-            Log::stack((array) config('okta-sdk.auth.log_channels'))
-                ->critical($error_message, [
-                    'event_type' => 'okta-api-config-missing-error',
-                    'class' => get_class(),
-                    'status_code' => '501',
-                    'message' => $error_message,
-                    'connection_key' => $this->connection_key,
-                ]);
-
-            throw new \Exception($error_message, 501);
-        }
-    }
-
-    /**
-     * Set the api_token class property variable
-     *
-     * The api_token variable by default will use the connection configuration API token that is defined in the `.env`
-     * file. When instantiating the ApiClient, you can pass a different API token as an argument. This method sets the
-     * API token based on whether the argument was provided.
-     *
-     * @return void
-     */
-    protected function setApiToken(): void
-    {
-        // If API token was not provided in construct, use config file value
-        if ($this->connection_config['api_token'] != null) {
-            $this->api_token = $this->connection_config['api_token'];
-        } else {
-            $error_message = 'The API token for this Okta connection key ' .
-                'is not defined in your `.env` file. The variable name for the ' .
-                'API token can be found in the connection configuration in ' .
-                '`config/okta-sdk.php`. Without this API token, you will ' .
-                'not be able to performed authenticated API calls.';
-
-            Log::stack((array) config('okta-sdk.auth.log_channels'))
-                ->critical($error_message, [
-                    'event_type' => 'okta-api-config-missing-error',
-                    'class' => get_class(),
-                    'status_code' => '501',
-                    'message' => $error_message,
-                    'connection_key' => $this->connection_key,
-                ]);
-
-            throw new \Exception($error_message, 501);
-        }
-    }
-
-    /**
-     * Set the request headers for the Okta API request
-     *
-     * @return void
-     */
-    public function setRequestHeaders(): void
-    {
-        // Get Laravel and PHP Version
-        $laravel = 'Laravel/' . app()->version();
-        $php = 'PHP/' . phpversion();
-
-        // Decode the composer.lock file
-        $composer_lock_json = json_decode((string) file_get_contents(base_path('composer.lock')), true);
-
-        // Use Laravel collection to search for the package. We will use the array to get the package name (in case it
-        // changes with a fork) and return the version key. For production, this will show a release number. In
-        // development, this will show the branch name.
-        $composer_package = collect($composer_lock_json['packages'])
-            ->where('name', 'gitlab-it/okta-sdk')
-            ->first();
-
-        // Reformat `gitlab-it/okta-sdk` as `GitLabIT-Okta-Sdk`
-        $composer_package_formatted = Str::title(Str::replace('/', '-', $composer_package['name']));
-        $package = $composer_package_formatted . '/' . $composer_package['version'];
-
-        // Define request headers
-        $this->request_headers = [
-            'Authorization' => 'SSWS ' . $this->api_token,
-            'User-Agent' => $package . ' ' . $laravel . ' ' . $php
-        ];
-    }
-
-    /**
-     * Test the connection to the Okta API
-     *
-     * @see https://developer.okta.com/docs/reference/api/org/#get-org-settings
-     *
-     * @return void
-     */
-    public function testConnection(): void
-    {
-        // API call to get Okta org details (a simple API endpoint) Logging for the request is handled by get() method.
-        $response = $this->get('/org');
-
-        if ($response->status->ok == false) {
             if (property_exists($response->object, 'errorCode')) {
-                $error_message = 'Okta API Error ' . $response->object->errorCode . ' - ' .
-                    $response->object->errorSummary;
+                Log::create(
+                    errors: [
+                        'error_code' => $response->object->errorCode ?? null,
+                        'error_message' => $response->object->errorSummary ?? null,
+                        'status_code' => $response->status->code,
+                    ],
+                    event_type: 'okta.api.test.error.' . Str::lower($response->object->errorCode),
+                    level: 'critical',
+                    message: 'Failed',
+                    method: __METHOD__,
+                    transaction: true
+                );
+                throw new ConfigurationException('Okta API connection test failed. ' . $response->object->errorCode . ' - ' . $response->object->errorSummary);
             } else {
-                $error_message = 'The Okta API connection test failed for an unknown reason. See logs for details.';
+                Log::create(
+                    errors: [
+                        'error_message' => 'None provided by Okta API',
+                        'status_code' => $response->status->code,
+                    ],
+                    event_type: 'okta.api.test.error.unknown',
+                    level: 'critical',
+                    message: 'Failed',
+                    method: __METHOD__,
+                    transaction: true
+                );
+                throw new ConfigurationException('Okta API connection test failed. Unknown reason. Status Code ' . $response->status->code);
             }
-            throw new \Exception($error_message, $response->status->code);
         }
+    }
+
+    /**
+     * Validate connection key and connection config array
+     *
+     * @param array $connection
+     *      An array with `url` and `token`.
+     */
+    private static function validateConnection(array $connection): array
+    {
+        $validator = Validator::make($connection, [
+            'url' => 'required|url:https',
+            'token' => 'required|alpha_dash|size:42',
+        ]);
+
+        if ($validator->fails()) {
+            Log::create(
+                errors: $validator->errors()->all(),
+                event_type: 'okta.api.validate.error',
+                level: 'critical',
+                message: 'Error',
+                method: __METHOD__,
+                transaction: true
+            );
+            throw new ConfigurationException(implode(' ', [
+                'Okta API configuration validation error.',
+                'This occurred in ' . __METHOD__ . '.',
+                '(Solution) ' . implode(' ', $validator->errors()->all())
+            ]));
+        }
+
+        return $validator->validated();
     }
 
     /**
@@ -303,53 +126,113 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
-     * return $okta_api->get('/users/' . $id);
+     * use \Provisionesta\Okta\ApiClient;
+     * $response = ApiClient::get(
+     *     uri: 'users/' . $id,
+     *     data: [
+     *         'limit' => 200
+     *     ]
+     * );
      * ```
-     * @param string $uri
-     *      The URI with leading slash after `/api/v1`
      *
-     * @param array $request_data
-     *      Optional query data to apply to GET request
+     * @param string $uri
+     *      The URI without leading slash after `/api/v1`
+     *
+     * @param array $data (optional)
+     *      Query data to apply to GET request
+     *
+     * @param array $connection (optional)
+     *      An array with `url` and `token`.
+     *      If not set, the `config('okta-api-client')` array will be used that
+     *      uses the OKTA_API_* variables from your .env file.
      *
      * @return object
-     *      See parseApiResponse() method. The content and schema of the object and json arrays can be found in the REST
-     *      API documentation for the specific endpoint.
+     *      See parseApiResponse() method. The content and schema of the data 
+     *      array can be found in the API documentation for the endpoint.
      */
-    public function get(string $uri, array $request_data = []): object
-    {
+    public static function get(
+        string $uri,
+        array $data = [],
+        array $connection = [],
+    ): object {
+        $connection = self::validateConnection($connection ?? config('okta-api-client'));
+        $event_ms = now();
+
         try {
-            // GET request against the base URL with the URI supplied from the parameter appended to the end
-            $request = Http::withHeaders($this->request_headers)
-                ->get($this->base_url . $uri, $request_data);
+            $request = Http::withHeaders(self::getRequestHeaders($connection))->get(
+                url: $connection['url'] . '/api/v1/' . $uri,
+                query: $data
+            );
+        } catch (RequestException $exception) {
+            return self::handleException(
+                exception: $exception,
+                method: __METHOD__,
+                uri: $uri
+            );
+        }
+
+        // Parse API Response and convert to returnable object with expected format
+        $response = self::parseApiResponse($request);
+        $query_string = $data ? '?' . http_build_query($data) : '';
+        self::logResponse(
+            event_ms: $event_ms,
+            method: __METHOD__,
+            url: $connection['url'] . '/api/v1/' . $uri . $query_string,
+            response: $response
+        );
+        self::throwExceptionIfEnabled(
+            method: 'get',
+            url: $connection['url'] . '/api/v1/' . $uri . $query_string,
+            response: $response
+        );
+
+        // If the response is a paginated response
+        if (self::checkForPagination($response->headers) == true) {
+            Log::create(
+                event_type: 'okta.api.get.process.pagination.started',
+                level: 'debug',
+                message: 'Paginated Results Process Started',
+                metadata: [
+                    'okta_request_id' => $response->headers['x-okta-request-id'] ?? null,
+                    'uri' => $uri,
+                ],
+                method: __METHOD__,
+                transaction: false
+            );
+
+            // Get paginated URL and use getPaginatedResults to loop through all paginated requests
+            $response->paginated_results  = self::getPaginatedResults(
+                connection: $connection,
+                paginated_url: self::generateNextPaginatedResultUrl($response->headers),
+                records: $response->object
+            );
+
+            // Unset property for original request body
+            unset($response->body);
 
             // Parse API Response and convert to returnable object with expected format
-            $response = $this->parseApiResponse($request);
-            $this->logResponse('get', $this->base_url . $uri, $response);
+            $response = self::parseApiResponse($response);
 
-            // If the response is a paginated response
-            if ($this->checkForPagination($response->headers) == true) {
-                // Get paginated URL and use getPaginatedResults to loop through all paginated requests
-                $paginated_results = $this->getPaginatedResults($this->base_url . $uri, $request_data);
+            $count_records = is_countable($response->object) ? count($response->object) : null;
+            $duration_ms_per_record = $count_records ? (int) ($event_ms->diffInMilliseconds() / $count_records) : null;
 
-                // The $paginated_results will be returned as an object of objects which needs to be converted to a flat
-                // object for standardizing the response returned. This needs to be a separate function instead of
-                // casting to an object due to return body complexities with nested array and object mixed notation.
-                /* @phpstan-ignore-next-line */
-                $request->paginated_results = $this->convertPaginatedResponseToObject($paginated_results);
-
-                // Unset property for body and json
-                unset($request->body);
-                unset($request->json);
-
-                // Parse API Response and convert to returnable object with expected format
-                $response = $this->parseApiResponse($request);
-            }
-
-            return $response;
-        } catch (RequestException $exception) {
-            return $this->handleException($exception, get_class(), $uri);
+            Log::create(
+                count_records: $count_records,
+                duration_ms: $event_ms,
+                duration_ms_per_record: $duration_ms_per_record,
+                event_type: 'okta.api.get.process.pagination.finished',
+                level: 'debug',
+                message: 'Paginated Results Process Complete',
+                metadata: [
+                    'okta_request_id' => $response->headers['x-okta-request-id'] ?? null,
+                    'uri' => $uri,
+                ],
+                method: __METHOD__,
+                transaction: false
+            );
         }
+
+        return $response;
     }
 
     /**
@@ -359,39 +242,68 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
-     * return $okta_api->post('/groups', [
-     *      'profile' => [
-     *          'name' => 'Hack The Planet Elite Members',
-     *          'description' => 'This is for all team members that are elite.'
-     *      ]
-     * ]);
+     * use \Provisionesta\Okta\ApiClient;
+     * $response = ApiClient::post(
+     *     uri: 'groups',
+     *     data: [
+     *         'profile' => [
+     *             'name' => 'Hack The Planet Elite Members',
+     *             'description' => 'This is for all team members that are elite.'
+     *         ]
+     *     ]
+     * );
      * ```
      *
      * @param string $uri
-     *      The URI with leading slash after `/api/v1`
+     *      The URI without leading slash after `/api/v1/`
      *
-     * @param array $request_data
+     * @param array $data (optional)
      *      Optional Post Body array
      *
+     * @param array $connection (optional)
+     *      An array with `url` and `token`.
+     *      If not set, the `config('okta-api-client')` array will be used that
+     *      uses the OKTA_API_* variables from your .env file.
+     *
      * @return object
-     *      See parseApiResponse() method. The content and schema of the object and json arrays can be found in the REST
-     *      API documentation for the specific endpoint.
+     *      See parseApiResponse() method. The content and schema of the data 
+     *      array can be found in the API documentation for the endpoint.
      */
-    public function post(string $uri, array $request_data = []): object
-    {
+    public static function post(
+        string $uri,
+        array $data = [],
+        array $connection = []
+    ): object {
+        $connection = self::validateConnection($connection);
+        $event_ms = now();
+
         try {
-            $request = Http::withHeaders($this->request_headers)
-                ->post($this->base_url . $uri, $request_data);
-
-            $response = $this->parseApiResponse($request);
-
-            $this->logResponse('post', $this->base_url . $uri, $response);
-
-            return $response;
+            $request = Http::withHeaders(self::getRequestHeaders($connection))->post(
+                url: $connection['url'] . '/api/v1/' . $uri,
+                data: $data
+            );
         } catch (RequestException $exception) {
-            return $this->handleException($exception, get_class(), $uri);
+            return self::handleException(
+                exception: $exception,
+                method: __METHOD__,
+                uri: $uri
+            );
         }
+
+        $response = self::parseApiResponse($request);
+        self::logResponse(
+            event_ms: $event_ms,
+            method: __METHOD__,
+            url: $connection['url'] . '/api/v1/' . $uri,
+            response: $response
+        );
+        self::throwExceptionIfEnabled(
+            method: 'post',
+            url: $connection['url'] . '/api/v1/' . $uri,
+            response: $response
+        );
+
+        return $response;
     }
 
     /**
@@ -402,39 +314,69 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
-     * return $okta_api->post('/groups/' . $group_id, [
-     *      'profile' => [
-     *          'name' => 'Hack The Planet Apprentice Members',
-     *          'description' => 'This is for all team members that are not quite elite.'
-     *      ]
-     * ]);
+     * use \Provisionesta\Okta\ApiClient;
+     * $group_id = '00g1ab2c4d4e5f6g7h8i';
+     * $response = ApiClient::put(
+     *     uri: 'groups/' . $group_id',
+     *     data: [
+     *         'profile' => [
+     *             'name' => 'Hack The Planet Apprentice Members',
+     *             'description' => 'This is for all team members that are not quite elite.'
+     *         ]
+     *     ]
+     * );
      * ```
      *
      * @param string $uri
-     *      The URI with leading slash after `/api/v1`
+     *      The URI without leading slash after `/api/v1/`
      *
-     * @param array $request_data
+     * @param array $data (optional)
      *      Optional request data to send with PUT request
      *
+     * @param array $connection (optional)
+     *      An array with `url` and `token`.
+     *      If not set, the `config('okta-api-client')` array will be used that
+     *      uses the OKTA_API_* variables from your .env file.
+     *
      * @return object
-     *      See parseApiResponse() method. The content and schema of the object and json arrays can be found in the REST
-     *      API documentation for the specific endpoint.
+     *      See parseApiResponse() method. The content and schema of the data 
+     *      array can be found in the API documentation for the endpoint.
      */
-    public function put(string $uri, array $request_data = []): object
-    {
+    public static function put(
+        string $uri,
+        array $data = [],
+        array $connection = []
+    ): object {
+        $connection = self::validateConnection($connection);
+        $event_ms = now();
+
         try {
-            $request = Http::withHeaders($this->request_headers)
-                ->put($this->base_url . $uri, $request_data);
-
-            $response = $this->parseApiResponse($request);
-
-            $this->logResponse('put', $this->base_url . $uri, $response);
-
-            return $response;
+            $request = Http::withHeaders(self::getRequestHeaders($connection))->put(
+                url: $connection['url'] . '/api/v1/' . $uri,
+                data: $data
+            );
         } catch (RequestException $exception) {
-            return $this->handleException($exception, get_class(), $uri);
+            return self::handleException(
+                exception: $exception,
+                method: __METHOD__,
+                uri: $uri
+            );
         }
+
+        $response = self::parseApiResponse($request);
+        self::logResponse(
+            event_ms: $event_ms,
+            method: __METHOD__,
+            url: $connection['url'] . '/api/v1/' . $uri,
+            response: $response
+        );
+        self::throwExceptionIfEnabled(
+            method: 'put',
+            url: $connection['url'] . '/api/v1/' . $uri,
+            response: $response
+        );
+
+        return $response;
     }
 
     /**
@@ -444,41 +386,86 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * $group_id = '00ub0oNGTSWTBKOLGLNR';
-     *
-     * $okta_api = new \GitlabIt\Okta\ApiClient('prod');
-     * return $okta_api->delete('/user/'.$group_id);
+     * use \Provisionesta\Okta\ApiClient;
+     * $group_id = '00g1ab2c4d4e5f6g7h8i';
+     * $response = ApiClient::delete(
+     *     connection: $okta_organization->connection_config,
+     *     uri: '/groups/' . $group_id',
+     *     data: []
+     * );
      * ```
      *
      * @param string $uri
-     *      The URI with leading slash after `/api/v1`
+     *      The URI without leading slash after `/api/v1/`
      *
-     * @param array $request_data
+     * @param array $data
      *      Optional request data to send with DELETE request
      *
+     * @param array $connection (optional)
+     *      An array with `url` and `token`.
+     *      If not set, the `config('okta-api-client')` array will be used that
+     *      uses the OKTA_API_* variables from your .env file.
+     *
      * @return object
-     *      See parseApiResponse() method. The content and schema of the object
-     *      and json arrays can be found in the REST API documentation for the
-     *      specific endpoint.
+     *      See parseApiResponse() method. The content and schema of the data 
+     *      array can be found in the API documentation for the endpoint.
      */
-    public function delete(string $uri, array $request_data = []): object
-    {
+    public static function delete(
+        string $uri,
+        array $data = [],
+        array $connection = []
+    ): object {
+        $connection = self::validateConnection($connection);
+        $event_ms = now();
+
         try {
-            $request = Http::withHeaders($this->request_headers)
-                ->delete($this->base_url . $uri, $request_data);
-
-            $response = $this->parseApiResponse($request);
-
-            $this->logResponse('delete', $this->base_url . $uri, $response);
-
-            return $response;
+            $request = Http::withHeaders(self::getRequestHeaders($connection))->delete(
+                url: $connection['url'] . '/api/v1/' . $uri,
+                data: $data
+            );
         } catch (RequestException $exception) {
-            return $this->handleException($exception, get_class(), $uri);
+            return self::handleException(
+                exception: $exception,
+                method: __METHOD__,
+                uri: $uri
+            );
         }
+
+        $response = self::parseApiResponse($request);
+        self::logResponse(
+            event_ms: $event_ms,
+            method: __METHOD__,
+            url: $connection['url'] . '/api/v1/' . $uri,
+            response: $response
+        );
+        self::throwExceptionIfEnabled(
+            method: 'delete',
+            url: $connection['url'] . '/api/v1/' . $uri,
+            response: $response
+        );
+
+        return $response;
     }
 
     /**
-     * Convert API Response Headers to Object
+     * Set the request headers for the Okta API request
+     *
+     * @param array $connection
+     *      An array with `url` and `token`.
+     */
+    private static function getRequestHeaders(array $connection): array
+    {
+        $composer_array = json_decode((string) file_get_contents(base_path('composer.json')), true);
+        $package_name = Str::title($composer_array['name']);
+
+        return [
+            'Authorization' => 'SSWS ' . $connection['token'],
+            'User-Agent' => $package_name . ' ' . 'Laravel/' . app()->version() . ' ' . 'PHP/' . phpversion()
+        ];
+    }
+
+    /**
+     * Convert API Response Headers to Array
      *
      * This method is called from the parseApiResponse method to prettify the Guzzle Headers that are an array with
      * nested array for each value, and converts the single array values into strings and converts to an object for
@@ -529,20 +516,15 @@ class ApiClient
      *     "set-cookie" => (truncated)
      * ]
      */
-    public function convertHeadersToArray(array $header_response): array
+    private static function convertHeadersToArray(array $header_response): array
     {
-        $headers = [];
-
-        foreach ($header_response as $header_key => $header_value) {
-            // If array has multiple keys, leave as array
-            if (count($header_value) > 1) {
-                $headers[$header_key] = $header_value;
+        return collect($header_response)->transform(function ($item) {
+            if (is_array($item)) {
+                return (count($item) > 1 ? $item : $item[0]);
             } else {
-                $headers[$header_key] = $header_value[0];
+                return $item;
             }
-        }
-
-        return $headers;
+        })->toArray();
     }
 
     /**
@@ -558,16 +540,15 @@ class ApiClient
      *      True if the response requires multiple pages
      *      False if response is a single page
      */
-    public function checkForPagination(array $headers): bool
+    private static function checkForPagination(array $headers): bool
     {
         if (array_key_exists('link', $headers) && is_array($headers['link'])) {
-            foreach ($headers['link'] as $link_key => $link_url) {
+            foreach ($headers['link'] as $link_url) {
                 if (Str::contains($link_url, 'next')) {
                     return true;
                 }
             }
         }
-
         return false;
     }
 
@@ -577,13 +558,13 @@ class ApiClient
      * Okta uses a cursor pagination instead of page navigation. If a 'link' header exists, then there is another page
      * <https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50>; rel="next"
      *
-     * @see https://developer.okta.com/docs/reference/core-okta-api/#pagination
+     * @link https://developer.okta.com/docs/reference/core-okta-api/#pagination
      *
      * @param array $headers API response headers from Okta request or parsed response.
      *
      * @return ?string URL string or null if not found
      */
-    public function generateNextPaginatedResultUrl(array $headers): ?string
+    private static function generateNextPaginatedResultUrl(array $headers): ?string
     {
         if (array_key_exists('link', $headers)) {
             foreach ($headers['link'] as $link_key => $link_url) {
@@ -593,89 +574,70 @@ class ApiClient
                     // After: https://mycompany.okta.com/api/v1/apps?after=0oa1ab2c3D4E5F6G7h8i&limit=50
                     $url = Str::remove('<', $headers['link'][$link_key]);
                     $url = Str::remove('>; rel="next"', $url);
-
                     return $url;
                 }
             }
         }
-
         return null;
     }
 
     /**
      * Helper function used to get Okta API results that require pagination.
      *
-     * @see https://developer.okta.com/docs/reference/core-okta-api/#pagination
+     * @link https://developer.okta.com/docs/reference/core-okta-api/#pagination
      *
      * Example Usage:
      * ```php
      * $this->getPaginatedResults('/users');
      * ```
      *
-     * @param string $paginated_url
-     *      The paginated URL
+     * @param array $connection
+     *      An array with `url` and `token`.
      *
-     * @param array $request_data
-     *      Optional query data to apply to GET request
+     * @param string $paginated_url
+     *      The paginated URL generated in the get() method
+     *
+     * @param array $records
+     *      An array of records from the first page to append to paginated results
      *
      * @return array
      *      An array of the response objects for each page combined.
      */
-    public function getPaginatedResults(string $paginated_url, array $request_data = []): array
-    {
-        // Define empty array for adding API results to
-        $records = [];
-
+    private static function getPaginatedResults(
+        array $connection,
+        string $paginated_url,
+        array $records = []
+    ): array {
         do {
-            // Get the results from the API. This ensures that the request data doesn't overwrite the pagination cursor.
-            if ($request_data != []) {
-                $request = Http::withHeaders($this->request_headers)
-                    ->get($paginated_url, $request_data);
-            } else {
-                $request = Http::withHeaders($this->request_headers)
-                    ->get($paginated_url);
-            }
+            $event_ms = now();
 
-            $response = $this->parseApiResponse($request);
-            $this->logResponse('get', $paginated_url, $response);
+            $request = Http::withHeaders(self::getRequestHeaders($connection))->get(
+                url: $paginated_url
+            );
 
-            // Loop through each object from the response and add it to the $records array
-            foreach ($response->object as $api_record) {
-                $records[] = $api_record;
-            }
+            $response = self::parseApiResponse($request);
+            self::logResponse(
+                event_ms: $event_ms,
+                method: __METHOD__,
+                url: $paginated_url,
+                response: $response
+            );
+            self::throwExceptionIfEnabled(
+                method: 'get',
+                url: paginated_url,
+                response: $response
+            );
 
-            // Get next page of results by parsing link and updating URL
-            if ($this->checkForPagination($response->headers)) {
-                $paginated_url = $this->generateNextPaginatedResultUrl($response->headers);
+            $records[] = $response->object;
+
+            if (self::checkForPagination($response->headers)) {
+                $paginated_url = self::generateNextPaginatedResultUrl($response->headers);
             } else {
                 $paginated_url = null;
             }
-
-            // Set request data to null after first iteration since it is now embedded in the response header URL
-            $request_data = [];
         } while ($paginated_url != null);
 
-        return $records;
-    }
-
-    /**
-     * Convert paginated API response array into an object
-     *
-     * @param array $paginatedResponse
-     *      Combined object returns from multiple pages of API responses.
-     *
-     * @return object
-     *      Object of the API responses combined.
-     */
-    public function convertPaginatedResponseToObject(array $paginatedResponse): object
-    {
-        $results = [];
-
-        foreach ($paginatedResponse as $response_key => $response_value) {
-            $results[$response_key] = $response_value;
-        }
-
-        return (object) $results;
+        return collect($records)->flatten(1)->toArray();
     }
 
     /**
@@ -688,19 +650,18 @@ class ApiClient
      *
      * @return object
      *  {
+     *    +"data": {
+     *      +"id": 12345678
+     *      +"name": "Dade Murphy"
+     *      +"username": "z3r0c00l"
+     *      +"state": "active"
+     *    },
      *    +"headers": [
      *      "Date" => "Fri, 12 Nov 2021 20:13:55 GMT",
      *      "Content-Type" => "application/json",
      *      "Content-Length" => "1623",
      *      "Connection" => "keep-alive"
      *    ],
-     *    +"json": "{"id":12345678,"name":"Dade Murphy","username":"z3r0c00l","state":"active"}"
-     *    +"object": {
-     *      +"id": 12345678
-     *      +"name": "Dade Murphy"
-     *      +"username": "z3r0c00l"
-     *      +"state": "active"
-     *    }
      *    +"status": {
      *      +"code": 200
      *      +"ok": true
@@ -711,29 +672,28 @@ class ApiClient
      *   }
      * }
      */
-    public function parseApiResponse(object $response): object
+    public static function parseApiResponse(object $response): object
     {
         if (property_exists($response, 'paginated_results')) {
-            $json_output = json_encode($response->paginated_results);
-            $object_output = (object) $response->paginated_results;
+            return (object) [
+                'data' => (object) $response->paginated_results,
+                'headers' => self::convertHeadersToArray($response->headers),
+                'status' => $response->status,
+            ];
         } else {
-            $json_output = json_encode($response->json());
-            $object_output = $response->object();
+            return (object) [
+                'data' => $response->object(),
+                'headers' => self::convertHeadersToArray($response->headers()),
+                'status' => (object) [
+                    'code' => $response->status(),
+                    'ok' => $response->ok(),
+                    'successful' => $response->successful(),
+                    'failed' => $response->failed(),
+                    'serverError' => $response->serverError(),
+                    'clientError' => $response->clientError(),
+                ],
+            ];
         }
-
-        return (object) [
-            'headers' => $this->convertHeadersToArray($response->headers()),
-            'json' => $json_output,
-            'object' => $object_output,
-            'status' => (object) [
-                'code' => $response->status(),
-                'ok' => $response->ok(),
-                'successful' => $response->successful(),
-                'failed' => $response->failed(),
-                'serverError' => $response->serverError(),
-                'clientError' => $response->clientError(),
-            ],
-        ];
     }
 
     /**
@@ -741,20 +701,23 @@ class ApiClient
      *
      * @see https://developer.okta.com/docs/reference/error-codes/
      *
-     * @param \Illuminate\Http\Client\RequestException $exception An instance of the exception
+     * @param \Illuminate\Http\Client\RequestException $exception 
+     *      An instance of the exception
      *
-     * @param string $log_class
-     *      get_class()
+     * @param string $method
+     *      The upstream method that invoked this method for traceability
+     *      Ex. __METHOD__
      *
-     * @param string $reference
-     *      Reference slug or identifier
+     * @param string $uri
+     *      HTTP Request URI
      *
      * @return object
      *  {
      *    +"error": {
      *      +"code": "<string>"
      *      +"message": "<string>"
-     *      +"reference": "<string>"
+     *      +"method": "<string>"
+     *      +"uri": "<string>"
      *    }
      *    +"status": {
      *      +"code": 400
@@ -765,24 +728,33 @@ class ApiClient
      *      +"clientError": true
      *   }
      */
-    public function handleException(RequestException $exception, $log_class, $reference)
-    {
-        Log::stack((array) $this->connection_config['log_channels'])
-            ->error($exception->getMessage(), [
-                'class' => $log_class,
-                'connection_key' => $this->connection_key,
-                'event_type' => 'okta-sdk-exception-error',
-                'exception' => $exception,
+    public static function handleException(
+        RequestException $exception,
+        $method,
+        $uri
+    ): object {
+        Log::create(
+            errors: [
+                'code' => $exception->getCode(),
                 'message' => $exception->getMessage(),
-                'reference' => $reference,
-                'status_code' => $exception->getCode(),
-            ]);
+                'trace' => $exception->getTrace()
+            ],
+            event_type: 'okta.api.' . explode('::', $method)[1] . '.error.http.exception',
+            level: 'error',
+            message: 'HTTP Response Exception',
+            metadata: [
+                'uri' => $uri
+            ],
+            method: $method,
+            transaction: true
+        );
 
         return (object) [
             'error' => (object) [
                 'code' => $exception->getCode(),
                 'message' => $exception->getMessage(),
-                'reference' => $reference
+                'method' => $method,
+                'uri' => $uri
             ],
             'status' => (object) [
                 'code' => $exception->getCode(),
@@ -793,5 +765,259 @@ class ApiClient
                 'clientError' => false,
             ],
         ];
+    }
+
+    /**
+     * Create a log entry for an API call
+     *
+     * This method is called from other methods and create log entry and throw exception
+     *
+     * @param string $method
+     *      The upstream method that invoked this method for traceability
+     *      Ex. __METHOD__
+     *
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
+     *
+     * @param object $response
+     *      The raw unformatted HTTP client response
+     *
+     * @param Carbon $event_ms
+     *      A process start timestamp used to calculate duration in ms for logs
+     */
+    private static function logResponse(
+        string $method,
+        string $url,
+        object $response,
+        Carbon $event_ms = null
+    ): void {
+        $log_type = [
+            200 => ['event_type' => 'success.ok', 'level' => 'debug'],
+            201 => ['event_type' => 'success.created', 'level' => 'debug'],
+            202 => ['event_type' => 'success.accepted', 'level' => 'debug'],
+            204 => ['event_type' => 'success.deleted', 'level' => 'debug'],
+            400 => ['event_type' => 'warning.bad-request', 'level' => 'warning'],
+            401 => ['event_type' => 'error.unauthorized', 'level' => 'error'],
+            403 => ['event_type' => 'error.forbidden', 'level' => 'error'],
+            404 => ['event_type' => 'warning.not-found', 'level' => 'warning'],
+            405 => ['event_type' => 'error.method-not-allowed', 'level' => 'error'],
+            412 => ['event_type' => 'error.precondition-failed', 'level' => 'error'],
+            422 => ['event_type' => 'error.unprocessable', 'level' => 'error'],
+            429 => ['event_type' => 'critical.rate-limit', 'level' => 'critical'],
+            500 => ['event_type' => 'critical.server-error', 'level' => 'critical'],
+            501 => ['event_type' => 'error.not-implemented', 'level' => 'error'],
+            503 => ['event_type' => 'critical.server-unavailable', 'level' => 'critical'],
+        ];
+
+        $errors = [];
+        if (isset($response->object->errorCode)) {
+            $errors['error_code'] = $response->object->errorCode;
+        }
+        if (isset($response->object->errorSummary)) {
+            $errors['error_message'] = $response->object->errorSummary;
+        }
+        if ($response->status->failed) {
+            $errors['status_code'] = $response->status->code;
+        }
+
+        $message = 'Success';
+        if ($response->status->clientError) {
+            $message = 'Client Error';
+        }
+        if ($response->status->serverError) {
+            $message = 'Server Error';
+        }
+
+        $count_records = null;
+        if ($response->status->ok && is_countable($response->object)) {
+            $count_records = count($response->object);
+        }
+
+        $event_ms_per_record = null;
+        if ($event_ms && $count_records && $count_records > 1) {
+            $event_ms_per_record = (int) ($event_ms->diffInMilliseconds() / $count_records);
+        }
+
+        Log::create(
+            count_records: $count_records,
+            errors: $errors,
+            event_ms: $event_ms,
+            event_ms_per_record: $event_ms_per_record,
+            event_type: 'okta.api.' . explode('::', $method)[1] . '.' . $log_type[$response->status->code]['event_type'],
+            level: $log_type[$response->status->code]['level'],
+            message: $message,
+            metadata: [
+                'okta_request_id' => $response->headers['x-okta-request-id'] ?? null,
+                'rate_limit_remaining' => $response->headers['x-rate-limit-remaining'] ?? null,
+                'url' => $url
+            ],
+            method: $method,
+            transaction: false
+        );
+
+        if (array_key_exists('x-rate-limit-remaining', $response->headers)) {
+            self::checkIfRateLimitApproaching($method, $url, $response);
+            self::checkIfRateLimitExceeded($method, $url, $response);
+        }
+    }
+
+    /**
+     * Throw an exception for a 4xx or 5xx response for an API call
+     *
+     * This method checks whether the .env variable or config value for `OKTA_API_EXCEPTIONS=true`
+     *
+     * @param string $method
+     *      The lowercase name of the method that calls this function (ex. `get`)
+     *
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
+     *
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
+     * 
+     * @throws BadRequestException
+     * @throws ConflictException
+     * @throws ForbiddenException
+     * @throws MethodNotAllowedException
+     * @throws NotFoundException
+     * @throws PreconditionFailedException
+     * @throws RateLimitException
+     * @throws ServerErrorException
+     * @throws UnauthorizedException
+     * @throws UnprocessableException
+     */
+    protected function throwExceptionIfEnabled(
+        string $method, 
+        string $url, 
+        object $response
+    ): void {
+        if (config('okta-api-client.exceptions') == true) {
+            $message = implode(' ', [
+                Str::upper($method),
+                $response->status->code,
+                $url,
+                isset($response->object->errorCode) ? $response->object->errorCode : null,
+                isset($response->object->errorSummary) ? $response->object->errorSummary : null,
+            ]);
+
+            switch ($response->status->code) {
+                case 400:
+                    throw new BadRequestException($message);
+                case 401:
+                    $message = implode(' ', [
+                        'The `OKTA_API_TOKEN` has been configured but is invalid.',
+                        '(Reason) This usually happens if it does not exist or has expired after 30 days of inactivity.',
+                        '(Solution) Please generate a new API Token and update the variable in your `.env` file.'
+                    ]);
+                    throw new UnauthorizedException($message);
+                case 403:
+                    throw new ForbiddenException($message);
+                case 404:
+                    throw new NotFoundException($message);
+                case 405:
+                    throw new MethodNotAllowedException($message);
+                case 409:
+                    throw new ConflictException($message);
+                case 412:
+                    throw new PreconditionFailedException($message);
+                case 422:
+                    throw new UnprocessableException($message);
+                case 429:
+                    throw new RateLimitException($message);
+                case 500:
+                    throw new ServerErrorException($response->json);
+            }
+        }
+    }
+
+    /**
+     * Create a warning log entry and delay the API request by 10 seconds 
+     * if the rate limit remaining is less than 20 percent
+     *
+     * @param string $method
+     *      The upstream method that invoked this method for traceability
+     *      Ex. __METHOD__
+     *
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
+     *
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
+     */
+    private static function checkIfRateLimitApproaching(
+        string $method,
+        string $url,
+        object $response
+    ): void {
+        if (array_key_exists('x-rate-limit-remaining', $response->headers)) {
+            $remaining = (int) $response->headers['x-rate-limit-remaining'];
+            $limit = (int) $response->headers['x-rate-limit-limit'];
+            $percent_remaining = round(($remaining / $limit) * 100);
+
+            if ($percent_remaining <= 20) {
+                Log::create(
+                    event_type: 'okta.api.rate-limit.approaching',
+                    level: 'critical',
+                    message: implode(' ', [
+                        'Rate Limit Approaching (' . $percent_remaining . '% Remaining).',
+                        'Sleeping for 10 seconds between requests to let the API catch a breath.'
+                    ]),
+                    metadata: [
+                        'okta_request_id' => $response->headers['x-okta-request-id'] ?? null,
+                        'okta_rate_limit_limit' => $response->headers['x-rate-limit-limit'] ?? null,
+                        'okta_rate_limit_percent' => $percent_remaining,
+                        'okta_rate_limit_remaining' => $response->headers['x-rate-limit-remaining'] ?? null,
+                        'url' => $url
+                    ],
+                    method: $method,
+                    transaction: false
+                );
+
+                sleep(10);
+            }
+        }
+    }
+
+    /**
+     * Create an error log entry for an API call if the rate limit remaining is equal to zero (0) or one (1),
+     * indicating that this is the last request that will be successful.
+     *
+     * @param string $method
+     *      The upstream method that invoked this method for traceability
+     *      Ex. __METHOD__
+     *
+     * @param string $url
+     *      The URL of the API call including the concatenated base URL and URI
+     *
+     * @param object $response
+     *      The HTTP response formatted with $this->parseApiResponse()
+     */
+    private static function checkIfRateLimitExceeded(
+        string $method,
+        string $url,
+        object $response
+    ): void {
+        if (array_key_exists('x-rate-limit-remaining', $response->headers)) {
+            if ($response->headers['x-rate-limit-remaining'] <= 1) {
+                Log::create(
+                    event_type: 'okta.api.rate-limit.exceeded',
+                    level: 'critical',
+                    message: implode(' ', [
+                        'Rate Limit Exceeded.',
+                        'This request should be refactored so we do not cause the API any further harm.'
+                    ]),
+                    metadata: [
+                        'okta_request_id' => $response->headers['x-okta-request-id'] ?? null,
+                        'okta_rate_limit_limit' => $response->headers['x-rate-limit-limit'] ?? null,
+                        'okta_rate_limit_remaining' => $response->headers['x-rate-limit-remaining'] ?? null,
+                        'url' => $url
+                    ],
+                    method: $method,
+                    transaction: true
+                );
+
+                throw new RateLimitException('Okta API rate limit exceeded. See logs for details.');
+            }
+        }
     }
 }

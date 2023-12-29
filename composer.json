@@ -1,39 +1,38 @@
 {
-    "name": "gitlab-it/okta-sdk",
-    "description": "Okta API SDK for Laravel",
+    "name": "provisionesta/okta-api-client",
+    "description": "Okta API Client for Laravel",
+    "homepage": "https://gitlab.com/provisionesta/okta-api-client",
     "license": "MIT",
     "authors": [
         {
-            "name": "Dillon Wheeler",
-            "email": "dwheeler@gitlab.com",
-            "homepage": "https://gitlab.com/dillonwheeler"
-        },
-        {
-            "name": "Jeff Martin",
-            "email": "jmartin@gitlab.com",
-            "homepage": "https://gitlab.com/jeffersonmartin"
+            "name": "Jefferson Martin",
+            "email": "provisionesta@jeffersonmartin.com"
         }
     ],
     "require": {
-        "php": "^8.0 || ^8.1 || ^8.2",
-        "illuminate/config": "^8.0 || ^9.0 || ^10.0",
-        "illuminate/http": "^8.0 || ^9.0 || ^10.0",
-        "illuminate/log": "^8.0 || ^9.0 || ^10.0",
-        "illuminate/support": "^8.0 || ^9.0 || ^10.0"
+        "php": "^8.0 || ^8.1 || ^8.2 || ^8.3",
+        "illuminate/config": "^8.0 || ^9.0 || ^10.0 || ^11.0",
+        "illuminate/http": "^8.0 || ^9.0 || ^10.0 || ^11.0",
+        "illuminate/log": "^8.0 || ^9.0 || ^10.0 || ^11.0",
+        "illuminate/support": "^8.0 || ^9.0 || ^10.0 || ^11.0",
+        "provisionesta/audit": "^1.0"
     },
     "require-dev": {
         "nunomaduro/larastan": "^1.0 || ^2.0",
         "orchestra/testbench": "^6.23 || ^7.0 || ^8.0"
     },
+    "suggest": {
+        "provisionesta/okta-laravel-actions": "Collection of Laravel Actions API/Console/Job/Service CRUD classes for Okta apps, groups, and users endpoints."
+    },
     "autoload": {
         "psr-4": {
-            "GitlabIt\\Okta\\": "src/"
+            "Provisionesta\\Okta\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "GitlabIt\\Okta\\OktaServiceProvider"
+                "Provisionesta\\Okta\\OktaApiServiceProvider"
             ]
         }
     }
