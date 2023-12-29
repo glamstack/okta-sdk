@@ -136,7 +136,7 @@ class ApiClient
      * ```
      *
      * @param string $uri
-     *      The URI without leading slash after `/api/v1`
+     *      The URI without leading slash after `/api/v1/`
      *
      * @param array $data (optional)
      *      Query data to apply to GET request
@@ -160,14 +160,14 @@ class ApiClient
 
         try {
             $request = Http::withHeaders(self::getRequestHeaders($connection))->get(
-                url: $connection['url'] . '/api/v1/' . $uri,
+                url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
                 query: $data
             );
         } catch (RequestException $exception) {
             return self::handleException(
                 exception: $exception,
                 method: __METHOD__,
-                uri: $uri
+                uri: ltrim($uri, '/')
             );
         }
 
@@ -177,12 +177,12 @@ class ApiClient
         self::logResponse(
             event_ms: $event_ms,
             method: __METHOD__,
-            url: $connection['url'] . '/api/v1/' . $uri . $query_string,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/') . $query_string,
             response: $response
         );
         self::throwExceptionIfEnabled(
             method: 'get',
-            url: $connection['url'] . '/api/v1/' . $uri . $query_string,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/') . $query_string,
             response: $response
         );
 
@@ -194,7 +194,7 @@ class ApiClient
                 message: 'Paginated Results Process Started',
                 metadata: [
                     'okta_request_id' => $response->headers['x-okta-request-id'] ?? null,
-                    'uri' => $uri,
+                    'uri' => ltrim($uri, '/'),
                 ],
                 method: __METHOD__,
                 transaction: false
@@ -225,7 +225,7 @@ class ApiClient
                 message: 'Paginated Results Process Complete',
                 metadata: [
                     'okta_request_id' => $response->headers['x-okta-request-id'] ?? null,
-                    'uri' => $uri,
+                    'uri' => ltrim($uri, '/'),
                 ],
                 method: __METHOD__,
                 transaction: false
@@ -279,14 +279,14 @@ class ApiClient
 
         try {
             $request = Http::withHeaders(self::getRequestHeaders($connection))->post(
-                url: $connection['url'] . '/api/v1/' . $uri,
+                url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
                 data: $data
             );
         } catch (RequestException $exception) {
             return self::handleException(
                 exception: $exception,
                 method: __METHOD__,
-                uri: $uri
+                uri: ltrim($uri, '/')
             );
         }
 
@@ -294,12 +294,12 @@ class ApiClient
         self::logResponse(
             event_ms: $event_ms,
             method: __METHOD__,
-            url: $connection['url'] . '/api/v1/' . $uri,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
             response: $response
         );
         self::throwExceptionIfEnabled(
             method: 'post',
-            url: $connection['url'] . '/api/v1/' . $uri,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
             response: $response
         );
 
@@ -352,14 +352,14 @@ class ApiClient
 
         try {
             $request = Http::withHeaders(self::getRequestHeaders($connection))->put(
-                url: $connection['url'] . '/api/v1/' . $uri,
+                url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
                 data: $data
             );
         } catch (RequestException $exception) {
             return self::handleException(
                 exception: $exception,
                 method: __METHOD__,
-                uri: $uri
+                uri: ltrim($uri, '/')
             );
         }
 
@@ -367,12 +367,12 @@ class ApiClient
         self::logResponse(
             event_ms: $event_ms,
             method: __METHOD__,
-            url: $connection['url'] . '/api/v1/' . $uri,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
             response: $response
         );
         self::throwExceptionIfEnabled(
             method: 'put',
-            url: $connection['url'] . '/api/v1/' . $uri,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
             response: $response
         );
 
@@ -420,14 +420,14 @@ class ApiClient
 
         try {
             $request = Http::withHeaders(self::getRequestHeaders($connection))->delete(
-                url: $connection['url'] . '/api/v1/' . $uri,
+                url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
                 data: $data
             );
         } catch (RequestException $exception) {
             return self::handleException(
                 exception: $exception,
                 method: __METHOD__,
-                uri: $uri
+                uri: ltrim($uri, '/')
             );
         }
 
@@ -435,12 +435,12 @@ class ApiClient
         self::logResponse(
             event_ms: $event_ms,
             method: __METHOD__,
-            url: $connection['url'] . '/api/v1/' . $uri,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
             response: $response
         );
         self::throwExceptionIfEnabled(
             method: 'delete',
-            url: $connection['url'] . '/api/v1/' . $uri,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
             response: $response
         );
 
@@ -743,7 +743,7 @@ class ApiClient
             level: 'error',
             message: 'HTTP Response Exception',
             metadata: [
-                'uri' => $uri
+                'uri' => ltrim($uri, '/')
             ],
             method: $method,
             transaction: true
@@ -754,7 +754,7 @@ class ApiClient
                 'code' => $exception->getCode(),
                 'message' => $exception->getMessage(),
                 'method' => $method,
-                'uri' => $uri
+                'uri' => ltrim($uri, '/')
             ],
             'status' => (object) [
                 'code' => $exception->getCode(),
