@@ -53,19 +53,19 @@ class ApiClient
                 level: 'debug',
                 message: 'Success',
                 method: __METHOD__,
-                record_provider_id: $response->object->id,
+                record_provider_id: $response->data->id,
                 transaction: false
             );
             return true;
         } else {
-            if (property_exists($response->object, 'errorCode')) {
+            if (property_exists($response->data, 'errorCode')) {
                 Log::create(
                     errors: [
-                        'error_code' => $response->object->errorCode ?? null,
-                        'error_message' => $response->object->errorSummary ?? null,
+                        'error_code' => $response->data->errorCode ?? null,
+                        'error_message' => $response->data->errorSummary ?? null,
                         'status_code' => $response->status->code,
                     ],
-                    event_type: 'okta.api.test.error.' . Str::lower($response->object->errorCode),
+                    event_type: 'okta.api.test.error.' . Str::lower($response->data->errorCode),
                     level: 'critical',
                     message: 'Failed',
                     method: __METHOD__,
@@ -73,8 +73,8 @@ class ApiClient
                 );
                 throw new ConfigurationException(implode(' ', [
                     'Okta API connection test failed.',
-                    $response->object->errorCode,
-                    $response->object->errorSummary,
+                    $response->data->errorCode,
+                    $response->data->errorSummary,
                 ]));
             } else {
                 Log::create(
@@ -211,7 +211,7 @@ class ApiClient
             $response->paginated_results  = self::getPaginatedResults(
                 connection: $connection,
                 paginated_url: self::generateNextPaginatedResultUrl($response->headers),
-                records: $response->object
+                records: $response->data
             );
 
             // Unset property for original request body
@@ -220,7 +220,7 @@ class ApiClient
             // Parse API Response and convert to returnable object with expected format
             $response = self::parseApiResponse($response);
 
-            $count_records = is_countable($response->object) ? count($response->object) : null;
+            $count_records = is_countable($response->data) ? count($response->data) : null;
             $duration_ms_per_record = $count_records ? (int) ($event_ms->diffInMilliseconds() / $count_records) : null;
 
             Log::create(
@@ -631,11 +631,11 @@ class ApiClient
             );
             self::throwExceptionIfEnabled(
                 method: 'get',
-                url: paginated_url,
+                url: $paginated_url,
                 response: $response
             );
 
-            $records[] = $response->object;
+            $records[] = $response->data;
 
             if (self::checkForPagination($response->headers)) {
                 $paginated_url = self::generateNextPaginatedResultUrl($response->headers);
@@ -817,11 +817,11 @@ class ApiClient
         ];
 
         $errors = [];
-        if (isset($response->object->errorCode)) {
-            $errors['error_code'] = $response->object->errorCode;
+        if (isset($response->data->errorCode)) {
+            $errors['error_code'] = $response->data->errorCode;
         }
-        if (isset($response->object->errorSummary)) {
-            $errors['error_message'] = $response->object->errorSummary;
+        if (isset($response->data->errorSummary)) {
+            $errors['error_message'] = $response->data->errorSummary;
         }
         if ($response->status->failed) {
             $errors['status_code'] = $response->status->code;
@@ -836,8 +836,8 @@ class ApiClient
         }
 
         $count_records = null;
-        if ($response->status->ok && is_countable($response->object)) {
-            $count_records = count($response->object);
+        if ($response->status->ok && is_countable($response->data)) {
+            $count_records = count($response->data);
         }
 
         $event_ms_per_record = null;
@@ -908,8 +908,8 @@ class ApiClient
                 Str::upper($method),
                 $response->status->code,
                 $url,
-                isset($response->object->errorCode) ? $response->object->errorCode : null,
-                isset($response->object->errorSummary) ? $response->object->errorSummary : null,
+                isset($response->data->errorCode) ? $response->data->errorCode : null,
+                isset($response->data->errorSummary) ? $response->data->errorSummary : null,
             ]);
 
             switch ($response->status->code) {
