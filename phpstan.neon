@@ -10,6 +10,8 @@ parameters:
     level: 9
 
     ignoreErrors:
+        - '#Call to an undefined method property object::$headers#'
+        - '#Call to an undefined method property object::$status#'
     excludePaths:
         - ./*/*/FileToBeExcluded.php
 
