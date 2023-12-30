@@ -799,10 +799,10 @@ class ApiClient
         Carbon $event_ms = null
     ): void {
         $log_type = [
-            200 => ['event_type' => 'success.ok', 'level' => 'debug'],
-            201 => ['event_type' => 'success.created', 'level' => 'debug'],
-            202 => ['event_type' => 'success.accepted', 'level' => 'debug'],
-            204 => ['event_type' => 'success.deleted', 'level' => 'debug'],
+            200 => ['event_type' => 'success', 'level' => 'debug'],
+            201 => ['event_type' => 'success', 'level' => 'debug'],
+            202 => ['event_type' => 'success', 'level' => 'debug'],
+            204 => ['event_type' => 'success', 'level' => 'debug'],
             400 => ['event_type' => 'warning.bad-request', 'level' => 'warning'],
             401 => ['event_type' => 'error.unauthorized', 'level' => 'error'],
             403 => ['event_type' => 'error.forbidden', 'level' => 'error'],
