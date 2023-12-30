@@ -104,6 +104,10 @@ class ApiClient
      */
     private static function validateConnection(array $connection): array
     {
+        if (empty($connection)) {
+            $connection = config('okta-api-client');
+        }
+
         $validator = Validator::make($connection, [
             'url' => 'required|url:https',
             'token' => 'required|alpha_dash|size:42',
@@ -306,6 +310,88 @@ class ApiClient
         );
         self::throwExceptionIfEnabled(
             method: 'post',
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
+            response: $response
+        );
+
+        return $response;
+    }
+
+    /**
+     * Okta API PATCH Request
+     *
+     * This method is called from other services to perform a PATCH request to
+     * update one or more attributes on an existing record.
+     *
+     * Partial updates are not supported on all endpoints. For example, they are
+     * supported on users endpoint, but not on groups.
+     *
+     * The Okta API does not support PATCH requests and uses non-standard POST
+     * requests for partial updates. The `patch()` method is used in the Okta
+     * API Client for improved developer experience, and we use the Laravel
+     * HTTP Client `post()` method behind the scenes. You can use the `post()`
+     * method in the Okta API Client for updating records without any issues,
+     * this is just an overlay to comply with industry conventions for `PATCH`.
+     *
+     * Example Usage:
+     * ```php
+     * use \Provisionesta\Okta\ApiClient;
+     * $group_id = '00g1ab2c4d4e5f6g7h8i';
+     * $response = ApiClient::patch(
+     *     uri: 'groups/' . $group_id',
+     *     data: [
+     *         'profile' => [
+     *             'description' => 'This is for all team members that are not quite elite.'
+     *         ]
+     *     ]
+     * );
+     * ```
+     *
+     * @param string $uri
+     *      The URI without leading slash after `/api/v1/`
+     *
+     * @param array $data (optional)
+     *      Optional request data to send with PUT request
+     *
+     * @param array $connection (optional)
+     *      An array with `url` and `token`.
+     *      If not set, the `config('okta-api-client')` array will be used that
+     *      uses the OKTA_API_* variables from your .env file.
+     *
+     * @return object
+     *      See parseApiResponse() method. The content and schema of the data
+     *      array can be found in the API documentation for the endpoint.
+     */
+    public static function patch(
+        string $uri,
+        array $data = [],
+        array $connection = []
+    ): object {
+        $connection = self::validateConnection($connection);
+        $event_ms = now();
+
+        try {
+            $request = Http::withHeaders(self::getRequestHeaders($connection))->post(
+                url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
+                data: $data
+            );
+        } catch (RequestException $exception) {
+            return self::handleException(
+                exception: $exception,
+                method: __METHOD__,
+                uri: ltrim($uri, '/')
+            );
+        }
+
+        $response = self::parseApiResponse($request);
+        self::logResponse(
+            event_ms: $event_ms,
+            method: __METHOD__,
+            url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
+            response: $response
+        );
+        self::throwExceptionIfEnabled(
+            method: 'patch|post',
             url: $connection['url'] . '/api/v1/' . ltrim($uri, '/'),
             response: $response
         );
@@ -799,10 +885,10 @@ class ApiClient
         Carbon $event_ms = null
     ): void {
         $log_type = [
-            200 => ['event_type' => 'success.ok', 'level' => 'debug'],
-            201 => ['event_type' => 'success.created', 'level' => 'debug'],
-            202 => ['event_type' => 'success.accepted', 'level' => 'debug'],
-            204 => ['event_type' => 'success.deleted', 'level' => 'debug'],
+            200 => ['event_type' => 'success', 'level' => 'debug'],
+            201 => ['event_type' => 'success', 'level' => 'debug'],
+            202 => ['event_type' => 'success', 'level' => 'debug'],
+            204 => ['event_type' => 'success', 'level' => 'debug'],
             400 => ['event_type' => 'warning.bad-request', 'level' => 'warning'],
             401 => ['event_type' => 'error.unauthorized', 'level' => 'error'],
             403 => ['event_type' => 'error.forbidden', 'level' => 'error'],

@@ -453,11 +453,13 @@ $record = ApiClient::post(
 );
 ```
 
-### PUT Requests
+### PATCH Requests
 
-The `put()` method is used for updating an existing record (similar to `PATCH` requests). You need to ensure that the ID of the record that you want to update is provided in the first argument (URI).
+> Partial updates are not supported on all endpoints. For example, they are supported on the users endpoint, but not on the groups endpoint. For endpoints that don't support partial updates, you will need to provide all of the attributes (ex. the entire profile). This may require fetching the record and overriding the value of the specific key in the array and passing the entire array back to the API client `data` argument.
 
-In most applications, this will be a variable that you get from your database or another location and won't be hard-coded.
+The `patch()` method is used for updating one or more attributes on existing records. A patch is used for partial updates. If you want to update and replace the attributes for the **entire** existing record, you should use the [put() method](#put-requests).
+
+You need to ensure that the ID of the record that you want to update is provided in the first argument (URI). In most applications, this will be a variable that you get from your database or another location and won't be hard-coded.
 
 ```php
 // Update a group
@@ -468,6 +470,29 @@ $record = ApiClient::put(
     data: [
         'profile' => [
             'description' => 'This group contains engineers that have liberated the garbage files.'
+        ]
+    ]
+);
+```
+
+> **Internal Developer Note:** The Okta API does not support PATCH requests and uses non-standard POST requests for partial updates. The `patch()` method is used in the Okta API Client for improved developer experience, and we use the Laravel HTTP Client `post()` method behind the scenes. You can use the `post()` method in the Okta API Client for updating records without any issues, this is just an overlay to comply with industry conventions for using `PATCH`.
+
+### PUT Requests
+
+The `put()` method is used for updating and replacing the attributes for an **entire** existing record. If you want to update one or more attributes **without updating the entire existing record**, use the [patch() method](#patch-requests). For most use cases, you will want to use the `patch()` method to update records.
+
+You need to ensure that the ID of the record that you want to update is provided in the first argument (URI). In most applications, this will be a variable that you get from your database or another location and won't be hard-coded.
+
+```php
+// Update a group
+// https://developer.okta.com/docs/reference/api/groups/#update-group
+$group_id = '00g1ab2c3D4E5F6G7h8i';
+$record = ApiClient::put(
+    uri: 'groups/' . $group_id,
+    data: [
+        'profile' => [
+            'name' => 'Hack the Planet Engineers',
+            'description' => 'This group contains engineers that have revealed to the world their elite skills.'
         ]
     ]
 );
@@ -1298,3 +1323,127 @@ $users = collect(ApiClient::get('users')->data)
 ### Additional Reading
 
 See the [Laravel Collections](https://laravel.com/docs/10.x/collections) documentation for additional usage. See the [provisionesta/okta-laravel-actions](https://gitlab.com/provisionesta/okta-laravel-actions) package for additional real-life examples.
+
+## Log Examples
+
+This package uses the [provisionesta/audit](https://gitlab.com/provisionesta/audit) package for standardized logs.
+
+### Event Types
+
+The `event_type` key should be used for any categorization and log searches.
+
+- **Format:** `okta.api.{method}.{result/log_level}.{reason?}`
+- **Methods:** `get|post|patch|put|delete`
+
+| Status Code | Event Type                                      | Log Level |
+|-------------|-------------------------------------------------|-----------|
+| N/A         | `okta.api.test.success`                         | DEBUG     |
+| N/A         | `okta.api.test.error.{okta_error_code}`         | CRITICAL  |
+| N/A         | `okta.api.test.error.unknown`                   | CRITICAL  |
+| N/A         | `okta.api.validate.error`                       | CRITICAL  |
+| N/A         | `okta.api.get.process.pagination.started`       | DEBUG     |
+| N/A         | `okta.api.get.process.pagination.finished`      | DEBUG     |
+| N/A         | `okta.api.rate-limit.approaching`               | CRITICAL  |
+| N/A         | `okta.api.rate-limit.exceeded` (Pre-Exception)  | CRITICAL  |
+| N/A         | `okta.api.{method}.error.http.exception`        | ERROR     |
+| 200         | `okta.api.{method}.success`                     | DEBUG     |
+| 201         | `okta.api.{method}.success`                     | DEBUG     |
+| 202         | `okta.api.{method}.success`                     | DEBUG     |
+| 204         | `okta.api.{method}.success`                     | DEBUG     |
+| 400         | `okta.api.{method}.warning.bad-request`         | WARNING   |
+| 401         | `okta.api.{method}.error.unauthorized`          | ERROR     |
+| 403         | `okta.api.{method}.error.forbidden`             | ERROR     |
+| 404         | `okta.api.{method}.warning.not-found`           | WARNING   |
+| 405         | `okta.api.{method}.error.method-not-allowed`    | ERROR     |
+| 412         | `okta.api.{method}.error.precondition-failed`   | DEBUG     |
+| 422         | `okta.api.{method}.error.unprocessable`         | DEBUG     |
+| 429         | `okta.api.{method}.critical.rate-limit`         | CRITICAL  |
+| 500         | `okta.api.{method}.critical.server-error`       | CRITICAL  |
+| 501         | `okta.api.{method}.error.not-implemented`       | ERROR     |
+| 503         | `okta.api.{method}.critical.server-unavailable` | CRITICAL  |
+
+### Successful Requests
+
+#### GET Request Log
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::get Success {"event_type":"okta.api.get.success","method":"Provisionesta\\Okta\\ApiClient::get","event_ms":453,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"499","url":"https://dev-12345678.okta.com/api/v1/org"}}
+```
+
+#### GET Paginated Request Log
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::get Success {"event_type":"okta.api.get.success","method":"Provisionesta\\Okta\\ApiClient::get","count_records":200,"event_ms":1081,"event_ms_per_record":5,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"299","url":"https://dev-12345678.okta.com/api/v1/users?limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::get Paginated Results Process Started {"event_type":"okta.api.get.process.pagination.started","method":"Provisionesta\\Okta\\ApiClient::get","metadata":{"okta_request_id":"REDACTED","uri":"users"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":2346,"event_ms_per_record":11,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"298","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":1577,"event_ms_per_record":7,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"297","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":1115,"event_ms_per_record":5,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"296","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":1108,"event_ms_per_record":5,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"295","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":1067,"event_ms_per_record":5,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"294","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":1295,"event_ms_per_record":6,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"293","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":994,"event_ms_per_record":4,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"292","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":949,"event_ms_per_record":4,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"291","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":820,"event_ms_per_record":4,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"290","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":1060,"event_ms_per_record":5,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"289","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":200,"event_ms":741,"event_ms_per_record":3,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"288","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::getPaginatedResults Success {"event_type":"okta.api.getPaginatedResults.success","method":"Provisionesta\\Okta\\ApiClient::getPaginatedResults","count_records":90,"event_ms":407,"event_ms_per_record":4,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"287","url":"https://dev-12345678.okta.com/api/v1/users?after=00uREDACTED&limit=200&search=status+eq+%22ACTIVE%22+or+%28status+eq+%22DEPROVISIONED%22+and+statusChanged+ge+%222023-10-01T15%3A02%3A15.491037Z%22%29"}}
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::get Paginated Results Process Complete {"event_type":"okta.api.get.process.pagination.finished","method":"Provisionesta\\Okta\\ApiClient::get","duration_ms":14573,"metadata":{"okta_request_id":"REDACTED","uri":"users"}}
+```
+
+#### POST Request Log
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::post Success {"event_type":"okta.api.post.success","method":"Provisionesta\\Okta\\ApiClient::post","event_ms":349,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"49","url":"https://dev-12345678.okta.com/api/v1/groups"}}
+```
+
+#### PATCH Request Log
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::patch Success {"event_type":"okta.api.patch.success","method":"Provisionesta\\Okta\\ApiClient::patch","event_ms":522,"metadata":{"okta_request_id":"0235f183fa446f5a2ae369ebfa8e8c5f","rate_limit_remaining":"49","url":"https://dev-12345678.okta.com/api/v1/users/00u1b2c3d4e5f6g7h8i9"}}
+```
+
+If the endpoint does not support partial updates with POST requests with the PATCH overlay method, use a PUT request instead.
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.ERROR: ApiClient::patch Client Error {"event_type":"okta.api.patch.error.method-not-allowed","method":"Provisionesta\\Okta\\ApiClient::patch","errors":{"error_code":"E0000022","error_message":"The endpoint does not support the provided HTTP method","status_code":405},"event_ms":225,"metadata":{"okta_request_id":null,"rate_limit_remaining":null,"url":"https://dev-12345678.okta.com/api/v1/groups/00g1b2c3d4e5f6g7h8i9"}}
+```
+
+#### PUT Success Log
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::put Success {"event_type":"okta.api.put.success","method":"Provisionesta\\Okta\\ApiClient::put","event_ms":287,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"49","url":"https://dev-12345678.okta.com/api/v1/groups/00g1b2c3d4e5f6g7h8i9"}}
+```
+
+#### DELETE Success Log
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.DEBUG: ApiClient::delete Success {"event_type":"okta.api.delete.success","method":"Provisionesta\\Okta\\ApiClient::delete","event_ms":577,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"49","url":"https://dev-12345678.okta.com/api/v1/groups/00g1b2c3d4e5f6g7h8i9"}}
+```
+
+### Errors
+
+#### 400 Bad Request
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.WARNING: ApiClient::post Client Error {"event_type":"okta.api.post.warning.bad-request","method":"Provisionesta\\Okta\\ApiClient::post","errors":{"error_code":"E0000003","error_message":"The request body was not well-formed.","status_code":400},"event_ms":128,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"49","url":"https://dev-12345678.okta.com/api/v1/groups"}}
+```
+
+#### 401 Unauthorized
+
+##### Environment Variables Not Set
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.CRITICAL: ApiClient::validateConnection Error {"event_type":"okta.api.validate.error","method":"Provisionesta\\Okta\\ApiClient::validateConnection","errors":["The url field is required.","The token field is required."]}
+```
+
+##### Invalid Token
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.ERROR: ApiClient::get Client Error {"event_type":"okta.api.get.error.unauthorized","method":"Provisionesta\\Okta\\ApiClient::get","errors":{"error_code":"E0000011","error_message":"Invalid token provided","status_code":401},"event_ms":261,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":null,"url":"https://dev-12345678.okta.com/api/v1/org"}}
+```
+
+#### 404 Not Found
+
+```plain
+[YYYY-MM-DD HH:II:SS] local.WARNING: ApiClient::get Client Error {"event_type":"okta.api.get.warning.not-found","method":"Provisionesta\\Okta\\ApiClient::get","errors":{"error_code":"E0000007","error_message":"Not found: Resource not found: 00u1b2c3d4e5f6g7h8i9 (User)","status_code":404},"event_ms":614,"metadata":{"okta_request_id":"REDACTED","rate_limit_remaining":"49","url":"https://dev-12345678.okta.com/api/v1/users/00u1b2c3d4e5f6g7h8i9"}}
+```
