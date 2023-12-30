@@ -1,5 +1,5 @@
 includes:
-    - ./vendor/nunomaduro/larastan/extension.neon
+    - ./vendor/larastan/larastan/extension.neon
 
 parameters:
 
@@ -10,6 +10,8 @@ parameters:
     level: 9
 
     ignoreErrors:
+        - '#Access to an undefined property object::\$headers.#'
+        - '#Access to an undefined property object::\$status.#'
     excludePaths:
         - ./*/*/FileToBeExcluded.php
 

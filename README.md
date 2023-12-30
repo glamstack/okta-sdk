@@ -1,492 +1,403 @@
-# Okta SDK
+# Okta API Client
 
 [[_TOC_]]
 
 ## Overview
 
-The Okta SDK is an open source [Composer](https://getcomposer.org/) package created by [GitLab IT Engineering](https://about.gitlab.com/handbook/it/engineering/dev/) for use in internal Laravel applications for connecting to Okta for provisioning and deprovisioning of users, groups, applications, and other related functionality.
+The Okta API Client is an open source [Composer](https://getcomposer.org/) package for use in Laravel applications for connecting to Okta for provisioning and deprovisioning of users, groups, applications, and other related functionality.
 
-> **Disclaimer:** This is not an official package maintained by the GitLab or Okta product and development teams. This is an internal tool that we use in the GitLab IT department that we have open sourced as part of our company values.
->
-> Please use at your own risk and create merge requests for any bugs that you encounter.
->
-> We do not maintain a roadmap of community feature requests, however we invite you to contribute and we will gladly review your merge requests.
+This is maintained by the open source community and is not maintained by any company. Please use at your own risk and create merge requests for any bugs that you encounter.
 
-### v2 to v3 Upgrade Guide
+### Problem Statement
 
-There are several breaking changes with v3.0. See the [v3.0 changelog](changelog/3.0.md) to learn more.
+Instead of providing an SDK method for every endpoint in the API documentation, we have taken a simpler approach by providing a universal `ApiClient` that can perform `GET`, `POST`, `PUT`, and `DELETE` requests to any endpoint that you find in the [Okta API documentation](https://developer.okta.com/docs/reference/core-okta-api/).
 
-#### What's Changed
+This builds upon the simplicity of the [Laravel HTTP Client](https://laravel.com/docs/10.x/http-client) that is powered by the [Guzzle HTTP client](http://docs.guzzlephp.org/en/stable/) to provide "last lines of code parsing" for Okta API responses to improve the developer experience.
 
-- The `glamstack/okta-sdk` has been abandoned and has been renamed to `gitlab-it/okta-sdk`.
-- The `config/glamstack-gitlab.php` was renamed to `config/gitlab-sdk.php`. No array changes were made.
-- The namespace changed from `Glamstack\Okta` to `GitlabIt\Okta`.
-- Changed from a modified version of [Calendar Versioning (CalVer)](https://calver.org/) to using [Semantic Versioning (SemVer)](https://semver.org/).
-- License changed from `Apache 2.0` to `MIT`
+The value of this API Client is that it handles the API request logging, response pagination, rate limit backoff, and 4xx/5xx exception handling for you.
 
-#### Migration Steps
+For a comprehensive SDK with pre-built [Laravel Actions](https://laravelactions.com/) for console commands, service class methods, dispatchable jobs, and API endpoints, see the [provisionesta/okta-laravel-actions](https://gitlab.com/provisionesta/okta-laravel-actions) package.
 
-1. Remove `glamstack/okta-sdk` from `composer.json` and add `"gitlab-it/okta-sdk": "^3.0"`, then run `composer update`.
-2. Navigate to your `config` directory and rename `glamstack-okta.php` to `okta-sdk.php`.
-3. Perform a find and replace across your code base from `Glamstack\Okta` to `GitlabIt\Okta`.
-4. Perform a find and replace for `config('glamstack-okta.` to `config('okta-sdk.`
-
-### Maintainers
-
-| Name | GitLab Handle |
-|------|---------------|
-| [Dillon Wheeler](https://about.gitlab.com/company/team/#dillonwheeler) | [@dillonwheeler](https://gitlab.com/dillonwheeler) |
-| [Jeff Martin](https://about.gitlab.com/company/team/#jeffersonmartin) | [@jeffersonmartin](https://gitlab.com/jeffersonmartin) |
-
-### How It Works
-
-The URL of your Okta instance (ex. `https://mycompany.okta.com`) and API Token is specified in `config/okta-sdk.php` using variables inherited from your `.env` file.
-
-If your connection configuration is stored in your database and needs to be provided dynamically, the `config/okta-sdk.php` configuration file can be overridden by passing in an array to the `connection_config` parameter during initialization of the SDK. See [Dynamic Variable Connection per API Call](#dynamic-variable-connection-per-api-call) to learn more.
-
-Instead of providing a method for every endpoint in the API documentation, we have taken a simpler approach by providing a universal `ApiClient` that can perform `GET`, `POST`, `PUT`, and `DELETE` requests to any endpoint that you find in the [Okta API documentation](https://developer.okta.com/docs/reference/core-okta-api/) and handles the API response, error handling, and pagination for you.
-
-This builds upon the simplicity of the [Laravel HTTP Client](https://laravel.com/docs/8.x/http-client) that is powered by the [Guzzle HTTP client](http://docs.guzzlephp.org/en/stable/) to provide "last lines of code parsing" for Okta API responses to improve the developer experience.
-
-The examples below are a getting started guide. See the [API Requests](#api-requests) and [API Responses](#api-responses) section below for more details.
+### Example Usage
 
 ```php
-// Option 1. Initialize the SDK using the default connection
-$okta_api = new \GitlabIt\Okta\ApiClient();
-
-// Option 2. Initialize the SDK using a specific hard coded connection
-$okta_api = new \GitlabIt\Okta\ApiClient('prod');
+use Provisionesta\Okta\ApiClient;
 
 // Get a list of records
 // https://developer.okta.com/docs/reference/api/groups/#list-groups
-$groups = $okta_api->get('/groups');
+$groups = ApiClient::get('groups');
 
 // Search for records with a specific name
+// This example uses positional arguments
 // https://developer.okta.com/docs/reference/core-okta-api/#filter
 // https://developer.okta.com/docs/reference/api/groups/#list-groups-with-search
-$groups = $okta_api->get('/groups', [
+$groups = ApiClient::get('groups', [
     'search' => 'profile.name eq "Hack the Planet Engineers"'
 ]);
 
+// Search for users with a specific
+// This example uses positional arguments
 // https://developer.okta.com/docs/reference/api/users/#list-users-with-search
-$users = $okta_api->get('/users', [
+$users = ApiClient::get('users', [
     'search' => 'profile.firstName eq "Dade"'
 ]);
 
 // Get a specific record
 // https://developer.okta.com/docs/reference/api/groups/#get-group
-$record = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
+
+// {
+//     +"id": "0og1ab2c3D4E5F6G7h8i",
+//     +"created": "2023-01-01T00:00:00.000Z",
+//     +"lastUpdated": "2023-02-01T00:00:00.000Z",
+//     +"lastMembershipUpdated": "2023-03-15T00:00:00.000Z",
+//     +"type": "OKTA_GROUP",
+//     +"profile": {
+//         +"name": "Hack the Planet Engineers",
+//         +"description": "This group contains engineers that have proven they are elite enough to hack the Gibson.",
+//     },
+// }
+
+$group_name = $group->data->profile->name;
+// Hack the Planet Engineers
 
 // Create a group
 // https://developer.okta.com/docs/reference/api/groups/#add-group
-$record = $okta_api->post('/groups', [
-    'profile' => [
-        'name' => 'Hack the Planet Engineers',
-        'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+// This example uses named arguments
+$group = ApiClient::post(
+    uri: 'groups',
+    data: [
+        'profile' => [
+            'name' => 'Hack the Planet Engineers',
+            'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+        ]
     ]
-]);
+);
 
 // Update a group
 // https://developer.okta.com/docs/reference/api/groups/#update-group
-$group_id = '0oa1ab2c3D4E5F6G7h8i';
-$record = $okta_api->put('/groups/' . $group_id, [
-    'profile' => [
-        'description' => 'This group contains engineers that have liberated the garbage files.'
+// This example uses named arguments
+$group_id = '00g1ab2c3D4E5F6G7h8i';
+$group = ApiClient::put(
+    uri: 'groups/' . $group_id,
+    data: [
+        'profile' => [
+            'description' => 'This group contains engineers that have liberated the garbage files.'
+        ]
     ]
-]);
+);
 
 // Delete a group
 // https://developer.okta.com/docs/reference/api/groups/#remove-group
-$group_id = '0oa1ab2c3D4E5F6G7h8i';
-$record = $okta_api->delete('/groups/' . $group_id);
+$group_id = '00g1ab2c3D4E5F6G7h8i';
+ApiClient::delete('groups/' . $group_id);
 ```
+
+### Issue Tracking and Bug Reports
+
+We do not maintain a roadmap of feature requests, however we invite you to contribute and we will gladly review your merge requests.
+
+Please create an [issue](https://gitlab.com/provisionesta/okta-api-client/-/issues) for bug reports.
+
+### Contributing
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) to learn more about how to contribute.
+
+### Maintainers
+
+| Name | GitLab Handle | Email |
+|------|---------------|-------|
+| [Jeff Martin](https://www.linkedin.com/in/jeffersonmmartin/) | [@jeffersonmartin](https://gitlab.com/jeffersonmartin) | `provisionesta [at] jeffersonmartin [dot] com` |
+
+### Contributor Credit
+
+- [Dillon Wheeler](https://gitlab.com/dillonwheeler)
+- [Jeff Martin](https://gitlab.com/jeffersonmartin)
 
 ## Installation
 
 ### Requirements
 
-| Requirement | Version                 |
-|-------------|-------------------------|
-| PHP         | `^8.0`, `^8.1`, `^8.2`  |
-| Laravel     | `^8.0`, `^9.0`, `^10.0` |
+| Requirement | Version                          |
+|-------------|----------------------------------|
+| PHP         | `^8.0`, `^8.1`, `^8.2`, `^8.3`   |
+| Laravel     | `^8.0`, `^9.0`, `^10.0`, `^11.0` |
+
+### Upgrade Guide
+
+See the [changelog](https://gitlab.com/provisionesta/okta-api-client/-/blob/main/changelog/) for release notes.
+
+Still Using `glamstack/okta-sdk` (v2.x)? See the [v3.0 changelog](changelog/3.0.md) for upgrade instructions.
+
+Still using `gitlab-it/okta-sdk` (v3.x)? See the [v4.0 changelog](changelog/4.0.md) for upgrade instructions.
 
 ### Add Composer Package
 
-> Still Using `glamstack/okta-sdk` (v2.x)? See the [v3.0 Upgrade Guide](#v2-to-v3-upgrade-guide) for instructions to upgrade to `gitlab-it/okta-sdk:^3.0`.
-
-```
-composer require gitlab-it/okta-sdk:^3.0
+```plain
+composer require provisionesta/okta-api-client:^4.0
 ```
 
 If you are contributing to this package, see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on configuring a local composer package with symlinks.
 
 ### Publish the configuration file
 
-This command should only be run the first time that you use this package. You will override any custom configuration if you run this command again if you do not back up your old config file.
+**This is optional**. The configuration file specifies which `.env` variable names that that the API connection is stored in. You only need to publish the configuration file if you want to rename the `OKTA_API_*` `.env` variable names.
 
-```
-php artisan vendor:publish --tag=okta-sdk
+```plain
+php artisan vendor:publish --tag=okta-api-client
 ```
 
-## Environment Configuration
+## Connection Credentials
 
 ### Environment Variables
 
-To get started, add the following variables to your `.env` file. You can add these anywhere in the file on a new line, or add to the bottom of the file (your choice).
-
-```
-# .env
-
-OKTA_DEFAULT_CONNECTION="dev"
-OKTA_DEV_BASE_URL=""
-OKTA_DEV_API_TOKEN=""
-OKTA_PREVIEW_BASE_URL=""
-OKTA_PREVIEW_API_TOKEN=""
-OKTA_PROD_BASE_URL=""
-OKTA_PROD_API_TOKEN=""
-```
-
-### Connection Keys
-
-We use the concept of **_connection keys_** (a.k.a. instance keys) that refer to a configuration array in `config/okta-sdk.php` that allows you to configure the Base URL, API Token `.env` variable name, and log channels for each connection to the Okta API and provide a unique name for that connection.
-
-Each connection has a different Base URL and API token associated with it.
-
-We have pre-configured the `dev`, `preview`, and `prod` keys to help you get started quickly without any modifications needed to the `config/okta-sdk.php` file.
+Add the following variables to your `.env` file. You can add these anywhere in the file on a new line, or add to the bottom of the file (your choice).
 
 ```php
-# config/okta-sdk.php
-
-'connections' => [
-    'prod' => [
-        'base_url' => env('OKTA_PROD_BASE_URL'),
-        'api_token' => env('OKTA_PROD_API_TOKEN'),
-        'log_channels' => ['single'],
-    ],
-    'preview' => [
-       'base_url' => env('OKTA_PREVIEW_BASE_URL'),
-       'api_token' => env('OKTA_PREVIEW_API_TOKEN'),
-       'log_channels' => ['single'],
-    ],
-    'dev' => [
-       'base_url' => env('OKTA_DEV_BASE_URL'),
-       'api_token' => env('OKTA_DEV_API_TOKEN'),
-       'log_channels' => ['single'],
-    ],
-]
+OKTA_API_URL="https://dev-123456789.okta.com"
+OKTA_API_TOKEN=""
 ```
 
-If you have the rare use case where you have additional Okta instances or [least privilege]() service accounts beyond what is pre-configured, you can add additional connection keys in `config/okta-sdk.php` with the name of your choice and create new variables for the Base URL and API token using the other connections as examples.
+If you are using multiple connections (ex. dev and prod), simply create two blocks of variables and comment one of them out.
 
-#### Base URL
+```php
+# Development
+OKTA_API_URL="https://dev-123456789.okta.com"
+OKTA_API_TOKEN=""
 
-Each Okta customer is provided with a subdomain for their company. This is sometimes referred to as a tenant or `${yourOktaDomain}` in the API documentation. This should be configured in the `prod` connection key or using the `.env` variable (see below).
-
-```
-https://mycompany.okta.com
-```
-
-If you have access to the Okta Preview sandbox/testing/staging instance, you can also configure a Base URL and API token in the `preview` connection key.
-
-```
-https://mycompany.oktapreview.com
+# Production
+# OKTA_API_URL="https://mycompany.okta.com"
+# OKTA_API_TOKEN=""
 ```
 
-If you have a free [Okta developer account](https://developer.okta.com/signup/), you can configure the Base URL and API token in the `dev` key.
+If you have your connection secrets stored in your database or secrets manager, you can override the `config/okta-api-client.php` configuration or provide a connection array on each request. See [connection arrays](#connection-arrays) to learn more.
 
-```
-https://dev-12345678.okta.com
+#### URL
+
+Each Okta customer is provided with a subdomain for their company. This is sometimes referred to as a tenant or `${yourOktaDomain}` in the API documentation. You can also an Okta Preview instance.
+
+If you're just getting started, it is recommended to use a free [Okta developer account](https://developer.okta.com/signup/).
+
+```php
+OKTA_API_URL="https://mycompany.okta.com"
+
+OKTA_API_URL="https://mycompany.oktapreview.com"
+
+OKTA_API_URL="https://dev-12345678.okta.com"
 ```
 
 #### API Tokens
 
-See the [Okta documentation](https://developer.okta.com/docs/guides/create-an-api-token/main/) for creating an API token. Keep in mind that the API token uses the permissions for the user it belongs to, so it is a best practice to create a service account (bot) user for production application use cases. Any tokens that are inactive for 30 days without API calls will automatically expire.
+See the Okta documentation for [creating an API token](https://developer.okta.com/docs/guides/create-an-api-token/main/).
 
-> **Security Warning:** It is important that you do not add your API token to the `config/okta-sdk.php` file to avoid committing to your repository (secret leak). All API tokens should be defined in the `.env` file which is included in `.gitignore` and not committed to your repository. For advanced use cases, you can store your variables in CI/CD variables or a secrets vault (no documentation provided here).
+Keep in mind that the API token uses the permissions for the user that it belongs to, so it is a best practice to create a service account (bot) user for production application use cases.
 
-> **Internal Developer Note:** The API key is automatically prefixed with `SSWS ` when initializing the SDK.
+If you're just getting started, you should add the `Read-only Administrator` admin role for your production instance and add additional custom permissions as needed. For safety reasons, you should not grant `Super Administrator` admin role to this service account user.
 
-#### Default Global Connection
+Any tokens that are inactive for 30 days without API calls will automatically expire.
 
-By default, the SDK will use the `dev` connection key for all API calls across your application unless you override the default connection to a different **_connection key_** using the `OKTA_DEFAULT_CONNECTION` variable.
-
-If you're just getting started, it is recommended to leave this at `dev` so you can use this SDK with your [Okta developer account](https://developer.okta.com/signup/). You can change this to `preview` or `prod` later when deploying your application to staging or production environments.
-
-```
-OKTA_DEFAULT_CONNECTION="dev"
-```
-
-### Default Connection Key Variables
-
-You can use any combination of `prod`, `preview`, or `dev` connection keys. Be sure to replace `mycompany` with your own URL.
-
-Simply leave any unused connections blank or remove them from your `.env` file. You can always add them later.
-
-```
-# .env
-
-OKTA_DEFAULT_CONNECTION="dev"
-OKTA_DEV_BASE_URL="https://dev-12345678.okta.com"
-OKTA_DEV_API_TOKEN="YourDevT0k3nG0esH3r3"
-OKTA_PREVIEW_BASE_URL="https://mycompany.oktapreview.com"
-OKTA_PREVIEW_API_TOKEN="YourPreviewT0k3nG0esH3r3"
-OKTA_PROD_BASE_URL="https://mycompany.okta.com"
-OKTA_PROD_API_TOKEN="YourProdT0k3nG0esH3r3"
-```
-
-## Initializing the API Connection
-
-To use the default connection, you do **_not_** need to provide the **_connection key_** to the `ApiClient`. This allows you to build your application without hard coding a connection key and simply update the `.env` variable.
+Simply set the `OKTA_API_TOKEN` in your `.env` file.
 
 ```php
-// Initialize the SDK
-$okta_api = new \GitlabIt\Okta\ApiClient();
-
-// Get a list of records
-// https://developer.okta.com/docs/reference/api/groups/#list-groups
-$groups = $okta_api->get('/groups');
+OKTA_API_TOKEN="S3cr3tK3yG03sH3r3"
 ```
 
-#### Using a Specific Connection per API Call
+> **Internal Developer Note:** The API key is automatically prefixed with `SSWS ` when used by the API Client. It does not need to be included when defining the variable value.
 
-If you want to use a specific **_connection key_** when using the `ApiClient` that is different from the `OKTA_DEFAULT_CONNECTION` `.env` variable, you can pass any **_connection key_** that has been configured in `config/okta-sdk.php` as the first construct argument for the `ApiClient`.
+### Connection Arrays
+
+The variables that you define in your `.env` file are used by default unless you set the connection argument with an array containing the URL and either the API Token or the Client ID and Client Secret.
+
+> **Security Warning:** Do not commit a hard coded API token into your code base. This should only be used when using dynamic variables that are stored in your database or secrets manager.
 
 ```php
-// Initialize the SDK
-$okta_api = new \GitlabIt\Okta\ApiClient('preview');
-
-// Get a list of records
-// https://developer.okta.com/docs/reference/api/groups/#list-groups
-$groups = $okta_api->get('/groups');
+$connection = [
+    'url' => 'https://dev-12345678.okta.com',
+    'token' => 'S3cr3tK3yG03sH3r3'
+];
 ```
-
-> If you encounter errors, ensure that the API token has been added to your `.env` file in the `OKTA_{CONNECTION_KEY}_API_TOKEN` variable. Keep in mind that Okta API tokens automatically expire after 30 days of inactivity, so it is possible that you will have not run `dev` or `preview` API calls in awhile and will receive an unauthorized error message.
-
-### Dynamic Variable Connection per API Call
-
-If not utilizing a connection key in the `config/okta-sdk.php` configuration file, you can pass an array as the second argument with a custom connection configuration.
 
 ```php
-// Initialize the SDK
-$okta_api = new \GitlabIt\Okta\ApiClient(null, [
-    'base_url' => 'https://mycompany.okta.com',
-    'api_token' => '00fJq-ABCDEFGhijklmn0pQrsTu-Vw-xyZ12345678'
-    'log_channels' => ['single', 'okta-sdk']
-]);
+use Provisionesta\Okta\ApiClient;
+
+class MyClass
+{
+    private array $connection;
+
+    public function __construct($connection)
+    {
+        $this->connection = $connection;
+    }
+
+    public function getGroup($group_id)
+    {
+        return ApiClient::get(
+            connection: $this->connection,
+            uri: 'groups/' . $group_id
+        )->data;
+    }
+}
 ```
 
-> **Security Warning:** Do not commit a hard coded API token into your code base. This should only be used when using dynamic variables that are stored in your database.
+### Security Best Practices
 
-Here is an example of how you can use your own Eloquent model to store your Okta instances and provide them to the SDK. You can choose whether to provide dynamic log channels as part of your application logic or hard code the channels that you have configured in your application that uses the SDK.
-
-```php
-// The $okta_instance_id is provided dynamically in the controller or service request
-
-// Get Okta Instance
-// Disclaimer: This is an example and is not a feature of the SDK.
-$okta_instance = \App\Models\OktaInstance::query()
-    ->where('id', $okta_instance_id)
-    ->firstOrFail();
-
-// Initialize the SDK
-$okta_api = new \GitlabIt\Okta\ApiClient(null, [
-    'base_url' => $okta_instance->api_base_url,
-    'api_token' => decrypt($okta_instance->api_token),
-    'log_channels' => ['single', 'okta-sdk']
-]);
-```
-
-### Logging Configuration
-
-By default, we use the `single` channel for all logs that is configured in your application's `config/logging.php` file. This sends all Okta API log messages to the `storage/logs/laravel.log` file.
-
-You can configure the log channels for this SDK in `config/okta-sdk.php`. You can configure the log channels for the initial authentication in `auth.log_channels`. You can also configure the log channels for each of your connections in `connections.{connection_key}.log_channels`.
-
-```php
-// config/okta-sdk.php
-
-   'auth' => [
-        'log_channels' => ['single'],
-    ],
-
-    'connections' => [
-        'prod' => [
-            // ...
-            'log_channels' => ['single'],
-        ],
-        'preview' => [
-            // ...
-            'log_channels' => ['single'],
-        ],
-        'dev' => [
-            // ...
-            'log_channels' => ['single'],
-        ],
-    ]
-```
-
-#### Custom Log Channels
-
-If you would like to see Okta API logs in a separate log file that is easier to triage without unrelated log messages, you can create a custom log channel. For example, we recommend using the value of `okta-sdk`, however you can choose any name you would like. You can also create a log channel for each of your Okta connections (ex. `okta-sdk-prod` and `okta-sdk-preview`).
-
-Add the custom log channel to `config/logging.php`.
-
-```php
-// config/logging.php
-
-    'channels' => [
-
-        // Add anywhere in the `channels` array
-
-        'okta-sdk' => [
-            'name' => 'okta-sdk',
-            'driver' => 'single',
-            'level' => 'debug',
-            'path' => storage_path('logs/okta-sdk.log'),
-        ],
-    ],
-```
-
-Update the `channels.stack.channels` array to include the array key (ex. `okta-sdk`) of your custom channel. Be sure to add `okta-sdk` to the existing array values and not replace the existing values.
-
-```php
-// config/logging.php
-
-    'channels' => [
-        'stack' => [
-            'driver' => 'stack',
-            'channels' => ['single','slack', 'okta-sdk'],
-            'ignore_exceptions' => false,
-        ],
-    ],
-```
-
-Finally, update the `config/okta-sdk.php` configuration.
-
-```php
-// config/okta-sdk.php
-
-   'auth' => [
-        'log_channels' => ['okta-sdk'],
-    ],
-```
-
-You can repeat these configuration steps to customize any of your connection keys.
-
-## Security Best Practices
-
-### No Shared Tokens
+#### No Shared Tokens
 
 Do not use an API token that you have already created for another purpose. You should generate a new API Token for each use case.
 
 This is helpful during security incidents when a key needs to be revoked on a compromised system and you do not want other systems that use the same user or service account to be affected since they use a different key that wasn't revoked.
 
-### API Token Storage
+#### API Token Storage
 
-Do not add your API token to the `config/okta-sdk.php` file to avoid committing to your repository (secret leak).
+Do not add your API token to any `config/*.php` files to avoid committing to your repository (secret leak).
 
 All API tokens should be defined in the `.env` file which is included in `.gitignore` and not committed to your repository.
 
-It is recommended to store a copy of each API token in your preferred password manager (ex. 1Password, LastPass, etc.) and/or secrets vault (ex. HashiCorp Vault, Ansible, etc.).
+For advanced use cases, you can store your variables in CI/CD variables or a secrets vault (ex. Ansible Vault, AWS Parameter Store, GCP Secrets Manager, HashiCorp Vault, etc.).
 
-### API Token Permissions
+#### API Token Permissions
 
-Different Okta API operations require different admin privilege levels. API tokens inherit the privilege level of the admin account that is used to create them. It is therefore good practice to create a service account to use when you create API tokens so that you can assign the token the specific privilege level needed. See [Administrators documentation](https://help.okta.com/okta_help.htm?id=ext_Security_Administrators) for admin account types and the specific privileges of each.
-
-Credit: [Okta Documentation - Create an API Token](https://developer.okta.com/docs/guides/create-an-api-token/main/)
-
-#### Least Privilege
-
-If you need to use different API keys for least privilege security reasons, you can customize `config/okta-sdk.php` to add the same Okta Base URL multiple times with different connection keys using any names that fit your needs (ex. `prod_scope1`, `prod_scope2`, `prod_scope3`.
-
-You can customize the `.env` variable names as needed. The SDK uses the values from the `config/okta-sdk.php` file and does not use any `.env` variables directly.
-
-```php
-'prod_read_only' => [
-    'base_url' => env('OKTA_PROD_BASE_URL'),
-    'api_token' => env('OKTA_PROD_READ_ONLY_API_TOKEN'),
-    'log_channels' => ['single']
-],
-
-'prod_super_admin' => [
-    'base_url' => env('OKTA_PROD_BASE_URL'),
-    'api_token' => env('OKTA_PROD_SUPER_ADMIN_API_TOKEN'),
-    'log_channels' => ['single']
-],
-
-'prod_group_admin' => [
-    'base_url' => env('OKTA_PROD_BASE_URL'),
-    'api_token' => env('OKTA_PROD_GROUP_ADMIN_API_TOKEN'),
-    'log_channels' => ['single']
-],
-```
-
-You simply need to provide the connection key when invoking the SDK.
-
-```php
-$okta_api = new \GitlabIt\Okta\ApiClient('prod_read_only');
-$groups = $okta_api->get('/groups')->object();
-```
-
-If you need more flexibility, use a [Dynamic Variable Connection per API Call](#dynamic-variable-connection-per-api-call).
+Different Okta API operations require different admin privilege levels. API tokens inherit the privilege level of the admin account that is used to create them. It is therefore good practice to create a service account to use when you [create API tokens](https://developer.okta.com/docs/guides/create-an-api-token/main/) so that you can assign the token the specific privilege level needed. See [Administrators documentation](https://help.okta.com/okta_help.htm?id=ext_Security_Administrators) for admin account types and the specific privileges of each.
 
 ## API Requests
 
 You can make an API request to any of the resource endpoints in the [Okta REST API Documentation](https://developer.okta.com/docs/reference/core-okta-api/).
 
-#### Inline Usage
+**Just getting started?** Explore the [applications](https://developer.okta.com/docs/reference/api/apps), [groups](https://developer.okta.com/docs/reference/api/groups/), and [users](https://developer.okta.com/docs/reference/api/users/) endpoints.
+
+| Endpoint              | API Documentation                                                                                                              |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `apps`                | [List applications](https://developer.okta.com/docs/reference/api/apps/#list-applications)                                     |
+| `apps/{id}`           | [Get application](https://developer.okta.com/docs/reference/api/apps/#get-application)                                         |
+| `apps/{id}/users`     | [List users assigned to application](https://developer.okta.com/docs/reference/api/apps/#list-users-assigned-to-application)   |
+| `apps/{id}/groups`    | [List groups assigned to application](https://developer.okta.com/docs/reference/api/apps/#list-groups-assigned-to-application) |
+| `groups`              | [List groups](https://developer.okta.com/docs/reference/api/groups/#list-groups)                                               |
+| `groups/{id}`         | [Get group](https://developer.okta.com/docs/reference/api/groups/#get-group)                                                   |
+| `groups/{id}/users`   | [List group members](https://developer.okta.com/docs/reference/api/groups/#list-group-members)                                 |
+| `users`               | [List users](https://developer.okta.com/docs/reference/api/users/#list-users)                                                  |
+| `users/{id}`          | [Get user](https://developer.okta.com/docs/reference/api/users/#get-user)                                                      |
+| `users/{id}/appLinks` | [Get applications assigned to user](https://developer.okta.com/docs/reference/api/users/#get-assigned-app-links)               |
+
+### Dependency Injection
+
+If you include the fully-qualified namespace at the top of of each class, you can use the class name inside the method where you are making an API call.
 
 ```php
-// Initialize the SDK
-$okta_api = new \GitlabIt\Okta\ApiClient('prod');
+use Provisionesta\Okta\ApiClient;
+
+class MyClass
+{
+    public function getGroup($group_id)
+    {
+        return ApiClient::get('groups/' . $group_id)->data;
+    }
+}
+```
+
+If you do not use dependency injection, you need to provide the fully qualified namespace when using the class.
+
+```php
+class MyClass
+{
+    public function getGroup($group_id)
+    {
+        return \Provisionesta\Okta\ApiClient::get('groups/' . $group_id)->data;
+    }
+}
+```
+
+### Class Instantiation
+
+We transitioned to using static methods in v4.0 and you do not need to instantiate the ApiClient class.
+
+```php
+ApiClient::get('groups');
+ApiClient::post('groups', []);
+ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
+ApiClient::put('groups/00g1ab2c3D4E5F6G7h8i', []);
+ApiClient::delete('groups/00g1ab2c3D4E5F6G7h8i');
+```
+
+### Named vs Positional Arguments
+
+You can use named arguments/parameters (introduced in PHP 8) or positional function arguments/parameters.
+
+It is recommended is to use named arguments if you are specifying request data and/or are using a connection array. You can use positional arguments if you are only specifying the URI.
+
+Learn more in the PHP documentation for [function arguments](https://www.php.net/manual/en/functions.arguments.php), [named parameters](https://php.watch/versions/8.0/named-parameters), and this helpful [blog article](https://stitcher.io/blog/php-8-named-arguments).
+
+```php
+// Named Arguments
+ApiClient::get(
+    uri: 'groups'
+);
+
+// Positional Arguments
+ApiClient::get('groups');
 ```
 
 ### GET Requests
 
-The endpoint starts with a leading `/` after `/api/v1`. The Okta API documentation provides the full endpoint, so remove the `/api/v1` when copy and pasting the endpoint.
+The endpoint starts without a leading `/` after `/api/v1/`. The Okta API documentation provides the full endpoint, so remove the `/api/v1/` when copy and pasting the endpoint.
 
 See the [List all groups](https://developer.okta.com/docs/reference/api/groups/#list-groups) API documentation as reference for the examples below.
 
-With the SDK, you use the `get()` method with the endpoint `/groups` as the first argument.
+With the API Client, you use the `get()` method with the endpoint `groups` as the `uri` argument.
 
 ```php
-$okta_api->get('/groups');
+ApiClient::get('groups');
 ```
 
 You can also use variables or database models to get data for constructing your endpoints.
 
 ```php
-$endpoint = '/groups';
-$records = $okta_api->get($endpoint);
-```
-
-Here are some more examples of using endpoints.
-
-```php
 // Get a list of records
 // https://developer.okta.com/docs/reference/api/groups/#list-groups
-$records = $okta_api->get('/groups');
+$records = ApiClient::get('groups');
+
+// Use variable for endpoint
+$endpoint = 'groups';
+$records = ApiClient::get($endpoint);
 
 // Get a specific record
 // https://developer.okta.com/docs/reference/api/groups/#get-group
-$record = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group_id = '0og1ab2c3D4E5F6G7h8i';
+$record = ApiClient::get('groups/' . $group_id);
 
 // Get a specific record using a variable
 // This assumes that you have a database column named `api_group_id` that
-// contains the string with the Okta ID `0oa1ab2c3D4E5F6G7h8i`.
-$okta_group = App\Models\OktaGroup::where('id', $id)->firstOrFail();
-$api_group_id = $okta_group->api_group_id;
-$record = $okta_api->get('/groups/' . $api_group_id);
+// contains the string with the Okta ID `0og1ab2c3D4E5F6G7h8i`.
+$okta_group = \App\Models\OktaGroup::where('id', $id)->firstOrFail();
+$record = ApiClient::get('groups/' . $okta_group->api_group_id);
 ```
 
-### GET Requests with Query String Parameters
+#### GET Requests with Query String Parameters
 
-The second argument of a `get()` method is an optional array of parameters that is parsed by the SDK and the [Laravel HTTP Client](https://laravel.com/docs/8.x/http-client#get-request-query-parameters) and rendered as a query string with the `?` and `&` added automatically.
+The second positional argument or `data` named argument of a `get()` method is an optional array of parameters that is parsed by the API Client and the [Laravel HTTP Client](https://laravel.com/docs/10.x/http-client#get-request-query-parameters) and rendered as a query string with the `?` and `&` added automatically.
+
+##### API Request Filtering
+
+The Okta API uses `profile` child arrays for several resources. Most metadata that you define for a user or group will be in the profile. When searching for values, you use dot notation (ex. `profile.name`) to access to these attributes. Learn more in the [filter](https://developer.okta.com/docs/reference/core-okta-api/#filter) documentation. You will see references to `filter` and `search`, however it is recommended to use `search` for all queries.
+
+##### API Response Filtering
+
+You can also use [Laravel Collections](https://laravel.com/docs/10.x/collections#available-methods) to filter and transform results, either using a full data set or one that you already filtered with your API request.
+
+See [Using Laravel Collections](responses.md#using-laravel-collections) in the [API Responses](responses.md) documentation.
+
+##### Search for Records with Specific Name
+
+> https://developer.okta.com/docs/reference/api/groups/#list-groups-with-search
 
 ```php
-// Search for records with a specific name
-// https://developer.okta.com/docs/reference/api/groups/#list-groups-with-search
-$records = $okta_api->get('/groups', [
+// Named Arguments
+$records = ApiClient::get(
+    uri: 'groups',
+    data: ['search' => 'profile.name eq "Hack the Planet Engineers"']
+);
+
+// Positional Arguments
+$records = ApiClient::get('groups', [
     'search' => 'profile.name eq "Hack the Planet Engineers"'
 ]);
 
@@ -494,23 +405,29 @@ $records = $okta_api->get('/groups', [
 // https://mycompany.okta.com/api/v1/groups?search=profile.name+eq+%22Hack%20the&%20Planet%20Engineers%22
 ```
 
+##### List all deprovisioned users
+
+> https://developer.okta.com/docs/reference/api/users/#list-users-with-search
+
 ```php
-// List all deprovisioned users
-// https://developer.okta.com/docs/reference/api/users/#list-users-with-search
-$records = $okta_api->get('/users', [
-    'search' => 'status eq "DEPROVISIONED"'
-]);
+$records = ApiClient::get(
+    uri: 'users',
+    data: ['search' => 'status eq "DEPROVISIONED"']
+);
 
 // This will parse the array and render the query string
 // https://mycompany.okta.com/api/v1/groups?search=status+eq+%22DEPROVISIONED%22
 ```
 
+##### List all users in a specific department
+
+> https://developer.okta.com/docs/reference/api/users/#list-users-with-search
+
 ```php
-// Get all users for a specific department
-// https://developer.okta.com/docs/reference/api/users/#list-users-with-search
-$records = $okta_api->get('/users', [
-    'search' => 'profile.department eq "Engineering"'
-]);
+$records = ApiClient::get(
+    uri: 'users',
+    data: ['search' => 'profile.department eq "Engineering"']
+);
 
 // This will parse the array and render the query string
 // https://mycompany.okta.com/api/v1/groups?search=profile.department+eq+%22Engineering%22
@@ -518,19 +435,22 @@ $records = $okta_api->get('/users', [
 
 ### POST Requests
 
-The `post()` method works almost identically to a `get()` request with an array of parameters, however the parameters are passed as form data using the `application/json` content type rather than in the URL as a query string. This is industry standard and not specific to the SDK.
+The `post()` method works almost identically to a `get()` request with an array of parameters, however the parameters are passed as form data using the `application/json` content type rather than in the URL as a query string. This is industry standard and not specific to the API Client.
 
-You can learn more about request data in the [Laravel HTTP Client documentation](https://laravel.com/docs/8.x/http-client#request-data).
+You can learn more about request data in the [Laravel HTTP Client documentation](https://laravel.com/docs/10.x/http-client#request-data).
 
 ```php
 // Create a group
 // https://developer.okta.com/docs/reference/api/groups/#add-group
-$record = $okta_api->post('/groups', [
-    'profile' => [
-        'name' => 'Hack the Planet Engineers',
-        'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+$record = ApiClient::post(
+    uri: 'groups',
+    data: [
+        'profile' => [
+            'name' => 'Hack the Planet Engineers',
+            'description' => 'This group contains engineers that have proven they are elite enough to hack the Gibson.'
+        ]
     ]
-]);
+);
 ```
 
 ### PUT Requests
@@ -542,12 +462,15 @@ In most applications, this will be a variable that you get from your database or
 ```php
 // Update a group
 // https://developer.okta.com/docs/reference/api/groups/#update-group
-$group_id = '0oa1ab2c3D4E5F6G7h8i';
-$record = $okta_api->put('/groups/' . $group_id, [
-    'profile' => [
-        'description' => 'This group contains engineers that have liberated the garbage files.'
+$group_id = '00g1ab2c3D4E5F6G7h8i';
+$record = ApiClient::put(
+    uri: 'groups/' . $group_id,
+    data: [
+        'profile' => [
+            'description' => 'This group contains engineers that have liberated the garbage files.'
+        ]
     ]
-]);
+);
 ```
 
 ### DELETE Requests
@@ -559,56 +482,70 @@ Keep in mind that `delete()` methods will return different status codes dependin
 ```php
 // Delete a group
 // https://developer.okta.com/docs/reference/api/groups/#remove-group
-$group_id = '0oa1ab2c3D4E5F6G7h8i';
-$record = $okta_api->delete('/groups/' . $group_id);
+$group_id = '00g1ab2c3D4E5F6G7h8i';
+$record = ApiClient::delete('groups/' . $group_id);
 ```
 
 ### Class Methods
 
-The examples above show basic inline usage that is suitable for most use cases. If you prefer to use classes and constructors, the example below will provide a helpful example.
+The examples above show basic inline usage that is suitable for most use cases. If you prefer to use classes and constructors, the example below will be helpful.
 
 ```php
 <?php
 
-use GitlabIt\Okta\ApiClient;
+use Provisionesta\Okta\ApiClient;
+use Provisionesta\Okta\Exceptions\NotFoundException;
 
 class OktaGroupService
 {
-    protected $okta_api;
+    private $connection;
 
-    public function __construct($connection_key = null)
+    public function __construct(array $connection = [])
     {
-        // If connection key is null, use the default connection key
-        if(! $connection_key) {
-            $connection_key = config('okta-sdk.auth.default_connection');
-        }
-
-        $this->$okta_api = new ApiClient($connection_key);
+        // If connection is null, use the environment variables
+        $this->connection = !empty($connection) ? $connection : config('okta-api-client');
     }
 
     public function listGroups($query = [])
     {
-        $groups = $this->$okta_api->get('/groups', $query);
+        $groups = ApiClient::get(
+            connection: $this->connection,
+            uri: 'groups',
+            data: $query
+        );
 
-        return $groups->object;
+        return $groups->data;
     }
 
     public function getGroup($id, $query = [])
     {
-        $group = $this->$okta_api->get('/groups/'.$id, $query);
+        try {
+            $group = ApiClient::get(
+                connection: $this->connection,
+                uri: 'groups/' . $id,
+                data: $query
+            );
+        } catch (NotFoundException $e) {
+            // Custom logic to handle a record not found. For example, you could
+            // redirect to a page and flash an alert message.
+        }
 
-        return $group->object;
+        return $group->data;
     }
 
     public function storeGroup($request_data)
     {
-        $group = $this->$okta_api->post('/groups', $request_data);
+        $group = ApiClient::post(
+            connection: $this->connection,
+            uri: 'groups',
+            data: $request_data
+        );
 
         // To return an object with the newly created group
-        return $group->object;
+        return $group->data;
 
         // To return the ID of the newly created group
-        // return $group->object->id;
+        // return $group->data->id;
 
         // To return the status code of the form request
         // return $group->status->code;
@@ -619,16 +556,25 @@ class OktaGroupService
         // To throw an exception if the request fails
         // throw_if(!$group->status->successful, new \Exception($group->error->message, $group->status->code));
 
-        // To return the entire API response with the object, json, headers, and status
+        // To return the entire API response with the data, headers, and status
         // return $group;
     }
 
     public function updateGroup($id, $request_data)
     {
-        $group = $this->$okta_api->put('/groups/'.$id, $request_data);
+        try {
+            $group = ApiClient::put(
+                connection: $this->connection,
+                uri: 'groups/' . $id,
+                data: $request_data
+            );
+        } catch (NotFoundException $e) {
+            // Custom logic to handle a record not found. For example, you could
+            // redirect to a page and flash an alert message.
+        }
 
         // To return an object with the updated group
-        return $group->object;
+        return $group->data;
 
         // To return a bool with the status of the form request
         // return $group->status->successful;
@@ -636,40 +582,154 @@ class OktaGroupService
 
     public function deleteGroup($id)
     {
-        $group = $this->$okta_api->delete('/groups/'.$id);
+        try {
+            $group = ApiClient::delete(
+                connection: $this->connection,
+                uri: 'groups/' . $id
+            );
+        } catch (NotFoundException $e) {
+            // Custom logic to handle a record not found. For example, you could
+            // redirect to a page and flash an alert message.
+        }
 
         return $group->status->successful;
     }
 }
 ```
 
+### Rate Limits
+
+Most rate limits are hit due to pagination with large responses (ex. `/users` endpoint). If you have a large dataset, you may want to consider using `search` query to filter results to a smaller number of results.
+
+In v4.0, we added automatic backoff when 20% of rate limit is remaining. This slows down the requests by implementing a `sleep(10)` with each request. Since the rate limit resets at 60 seconds, this will slow the next 5-6 requests until the rate limit resets.
+
+If the Okta rate limit is exceeded for an endpoint, a `Provisionesta\Okta\Exceptions\RateLimitException` will be thrown.
+
+The backoff will slow the requests, however if the rate limit is exceeded, the request will fail and terminate.
+
 ## API Responses
 
-This SDK uses the GitLab IT standards for API response formatting.
+This API Client uses the Provisionesta standards for API response formatting.
 
 ```php
 // API Request
-$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
 
 // API Response
+$group->data; // object
 $group->headers; // array
-$group->json; // json
-$group->object; // object
 $group->status; // object
 $group->status->code; // int (ex. 200)
-$group->status->ok; // bool
-$group->status->successful; // bool
-$group->status->failed; // bool
-$group->status->serverError; // bool
-$group->status->clientError; // bool
+$group->status->ok; // bool (is 200 status)
+$group->status->successful; // bool (is 2xx status)
+$group->status->failed; // bool (is 4xx/5xx status)
+$group->status->clientError; // bool (is 4xx status)
+$group->status->serverError; // bool (is 5xx status)
 ```
 
-#### API Response Headers
+### Response Data
+
+The `data` property contains the contents of the Laravel HTTP Client `object()` method that has been parsed and has the final merged output of any paginated results.
+
+```php
+$group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
+$group->data;
+```
+
+```json
+{
+    +"id": "0og1ab2c3D4E5F6G7h8i",
+    +"created": "2023-01-01T00:00:00.000Z",
+    +"lastUpdated": "2023-02-01T00:00:00.000Z",
+    +"lastMembershipUpdated": "2023-03-15T00:00:00.000Z",
+    +"type": "OKTA_GROUP",
+    +"profile": {
+        +"name": "Hack the Planet Engineers",
+        +"description": "This group contains engineers that have proven they are elite enough to hack the Gibson.",
+    },
+}
+```
+
+#### Access a single record value
+
+You can access these variables using object notation. This is the most common use case for handling API responses.
+
+```php
+$group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i')->data;
+
+$group_name = $group->profile->name;
+// Hack the Planet Engineers
+```
+
+#### Looping through records
+
+If you have an array of multiple objects, you can loop through the records. The API Client automatically paginates and merges the array of records for improved developer experience.
+
+```php
+$groups = ApiClient::get('groups')->data;
+
+foreach($groups as $group) {
+    dd($group->profile->name);
+    // Hack the Planet Engineers
+}
+```
+
+#### Caching responses
+
+The API Client does not use caching to avoid any constraints with you being able to control which endpoints you cache.
+
+You can wrap an endpoint in a cache facade when making an API call. You can learn more in the [Laravel Cache](https://laravel.com/docs/10.x/cache) documentation.
+
+```php
+use Illuminate\Support\Facades\Cache;
+use Provisionesta\Okta\ApiClient;
+
+$groups = Cache::remember('okta_groups', now()->addHours(12), function () {
+    return ApiClient::get('groups')->data;
+});
+
+foreach($groups as $group) {
+    dd($group->profile->name);
+    // Hack the Planet Engineers
+}
+```
+
+When getting a specific ID or passing additional arguments, be sure to pass variables into `use($var1, $var2)`.
+
+```php
+$group_id = '00g1ab2c3D4E5F6G7h8i';
+
+$groups = Cache::remember('okta_group_' . $group_id, now()->addHours(12), function () use ($group_id) {
+    return ApiClient::get('groups/' . $group_id)->data;
+});
+```
+
+#### Date Formatting
+
+You can use the [Carbon](https://carbon.nesbot.com/docs/) library for formatting dates and performing calculations.
+
+```php
+$created_date = Carbon::parse($group->data->created)->format('Y-m-d');
+// 2023-01-01
+```
+
+```php
+$created_age_days = Carbon::parse($group->data->created)->diffInDays();
+// 265
+```
+
+#### Using Laravel Collections
+
+You can use [Laravel Collections](https://laravel.com/docs/10.x/collections#available-methods) which are powerful array helper tools that are similar to array searching and SQL queries that you may already be familiar with.
+
+See the [Parsing Responses with Laravel Collections](#parsing-responses-with-laravel-collections) documentation to learn more.
+
+### Response Headers
 
 > The headers are returned as an array instead of an object since the keys use hyphens that conflict with the syntax of accessing keys and values easily.
 
 ```php
-$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
 $group->headers;
 ```
 
@@ -699,315 +759,542 @@ $group->headers;
 ]
 ```
 
-#### API Response Specific Header
+#### Getting a Header Value
 
 ```php
 $content_type = $group->headers['Content-Type'];
+// application/json
 ```
 
-```
-application/json
-```
+### Response Status
 
-#### API Response JSON
+See the [Laravel HTTP Client documentation](https://laravel.com/docs/10.x/http-client#error-handling) to learn more about the different status booleans.
 
 ```php
-$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
-$group->json;
-```
-
-```json
-"{"id":0oa1ab2c3D4E5F6G7h8i,"name":"Hack the Planet Engineers","state":"ACTIVE"}"
-```
-
-#### API Response Object
-
-```php
-$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
-$group->object;
-```
-
-```php
-{
-  +"id": "0oa1ab2c3D4E5F6G7h8i"
-  +"description": "This group contains engineers that have proven they are elite enough to hack the Gibson."
-  +"name": "Hack the Planet Engineers"
-  +"state": "ACTIVE"
-}
-```
-
-#### Accessing single record values
-
-You can access these variables using object notation. This is the most common use case for handling API responses.
-
-```php
-$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i')->object;
-
-dd($group->name);
-```
-
-```
-Hack the Planet Engineers
-```
-
-#### Looping through records
-
-If you have an array of multiple objects, you can loop through the records.
-
-```php
-$groups = $okta_api->get('/groups')->object;
-
-foreach($groups as $group) {
-
-    dd($group->name);
-}
-```
-
-```
-Hack the Planet Engineers
-```
-
-#### Caching responses
-
-The SDK does not use caching to avoid any constraints with you being able to control which endpoints you cache.
-
-You can wrap an endpoint in a cache facade when making an API call. You can learn more in the [Laravel Cache](https://laravel.com/docs/9.x/cache) documentation.
-
-```php
-use Illuminate\Support\Facades\Cache;
-
-$okta_api = new \GitlabIt\Okta\ApiClient($connection_key);
-
-$groups = Cache::remember('okta_groups', now()->addHours(12), function () use ($okta_api) {
-    return $okta_api->get('/groups')->object;
-});
-
-foreach($groups as $group) {
-    dd($group->name);
-}
-```
-
-When getting a specific ID or passing additional arguments, be sure to pass variables into `use($var1, $var2)`.
-
-```php
-$okta_api = new \GitlabIt\Okta\ApiClient($connection_key);
-$group_id = '0oa1ab2c3D4E5F6G7h8i';
-
-$groups = Cache::remember('okta_group_' . $group_id, now()->addHours(12), function () use ($okta_api, $group_id) {
-    return $okta_api->get('/groups/' . $group_id)->object;
-});
-```
-
-#### API Response Status
-
-See the [Laravel HTTP Client documentation](https://laravel.com/docs/8.x/http-client#error-handling) to learn more about the different status booleans.
-
-```php
-$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
+$group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
 $group->status;
 ```
 
 ```php
 {
-  +"code": 200
-  +"ok": true
-  +"successful": true
-  +"failed": false
-  +"serverError": false
-  +"clientError": false
+  +"code": 200 // int (ex. 200)
+  +"ok": true // bool (is 200 status)
+  +"successful": true // bool (is 2xx status)
+  +"failed": false // bool (is 4xx/5xx status)
+  +"serverError": false // bool (is 4xx status)
+  +"clientError": false // bool (is 5xx status)
 }
 ```
 
 #### API Response Status Code
 
 ```php
-$group = $okta_api->get('/groups/0oa1ab2c3D4E5F6G7h8i');
-$group->status->code;
+$group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
+
+$status_code = $group->status->code;
+// 200
 ```
 
-```
-200
-```
+## Error Responses
 
-## Error Handling
+An exception is thrown for any 4xx or 5xx responses. All responses are automatically logged.
 
-All Okta API responses are returned from the SDK to your application without throwing an exception if there is an error. If you need to check for a successful result, use the `$response->status->successful` boolean.
+### Exceptions
 
-### Okta Error Codes
+| Code | Exception Class                                             |
+|------|-------------------------------------------------------------|
+| 400  | `Provisionesta\Okta\Exceptions\BadRequestException`         |
+| 401  | `Provisionesta\Okta\Exceptions\UnauthorizedException`       |
+| 403  | `Provisionesta\Okta\Exceptions\ForbiddenException`          |
+| 404  | `Provisionesta\Okta\Exceptions\NotFoundException`           |
+| 412  | `Provisionesta\Okta\Exceptions\PreconditionFailedException` |
+| 422  | `Provisionesta\Okta\Exceptions\UnprocessableException`      |
+| 429  | `Provisionesta\Okta\Exceptions\RateLimitException`          |
+| 500  | `Provisionesta\Okta\Exceptions\ServerErrorException`        |
 
-If request is not successful, the standard [Okta Error Code](https://developer.okta.com/docs/reference/error-codes/) response will be returned in the object.
+### Catching Exceptions
 
-```json
-+"object": {#1344
-    +"errorCode": "E0000003"
-    +"errorSummary": "The request body was not well-formed."
-    +"errorLink": "E0000003"
-    +"errorId": "<string>"
-    +"errorCauses": []
-}
-+"status": {#1369
-    +"code": 400
-    +"ok": false
-    +"successful": false
-    +"failed": true
-    +"serverError": false
-    +"clientError": true
-}
-```
-
-### Catching Status Codes
+You can catch any exceptions that you want to handle silently. Any uncaught exceptions will appear for users and cause 500 errors that will appear in your monitoring software.
 
 ```php
-$group = $this->$okta_api->post('/groups', $request_data);
-```
+use Provisionesta\Okta\Exceptions\NotFoundException;
 
-You can return a bool or the HTTP status code with the status of the form request. See the [API Response Status](#api-response-status) for other properties you can return.
-
-```php
-return $group->status->successful;
-return $group->status->code;
-```
-
-You can also throw an exception using `\Exception` or a custom exception in your application.
-
-```php
-throw_if(!$group->status->successful, new \Exception($group->error->message, $group->status->code));
-```
-
-You can also use a conditional statement to handle a successful and failed response.
-
-```php
-if($group->status->successful) {
-    dd('Group Saved - ID ' . $group->object->id);
-} else {
-    dd('Group Could Not Be Saved - Reason: ' . $group->object->errorSummary);
+try {
+    $group = ApiClient::get('groups/00g1ab2c3D4E5F6G7h8i');
+} catch (NotFoundException $e) {
+    // Group is not found. You can create a log entry, throw an exception, or handle it another way.
+    Log::error('Okta group could not be found', ['okta_group_id' => $group_id]);
 }
 ```
 
-If an `\Illuminate\Http\Client\RequestException` exception is thrown by Guzzle, the `object` and `json` properties will not be returned and an error object will included with more details about the exception to allow you to handle the error gracefully.
+### Disabling Exceptions
 
-```json
-{
-+"error": {
-    +"code": "<string>"
-    +"message": "<string>"
-    +"reference": "<string>"
-}
-+"status": {
-    +"code": 400
-    +"ok": false
-    +"successful": false
-    +"failed": true
-    +"serverError": false
-    +"clientError": true
-}
-```
-
-If there is an SDK configuration or authentication error, a new `\Exception` will be thrown with the error message.
-
-See the [Log Outputs](#log-outputs) below for how the SDK handles configuration errors.
-
-See the [Okta API error codes documentation](https://developer.okta.com/docs/reference/error-codes/) to learn more about the codes that can be returned. More information on each resource endpoint can be found on the respective [API documentation page](https://developer.okta.com/docs/reference/core-okta-api/).
-
-## Log Outputs
-
-> The output of error messages is shown in the `README` to allow search engines to index these messages for developer debugging support.
-
-### Connection Configuration and Authentication
-
-When the `ApiClient` class is invoked for the first time, an API connection test is performed to the `/org` endpoint of the Okta connection. This endpoint requires authentication, so this validates whether the API Token is valid.
+If you do not want exceptions to be thrown, you can globally disable exceptions for the Okta API Client and handle the status for each request yourself. Simply set the `OKTA_API_EXCEPTIONS=false` in your `.env` file.
 
 ```php
-$okta_api = new \GitlabIt\Okta\ApiClient('prod');
-$okta_api->get('/groups');
+OKTA_API_EXCEPTIONS=false
 ```
 
-#### Valid API Token
+## Parsing Responses with Laravel Collections
 
-```
-[2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzENHYyWivKath4UvZhAAAAt8","rate_limit_remaining":"998","status_code":200}
-
-[2022-01-31 23:38:56] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzEC100RhpyNJdV3sEiAAABmQ","rate_limit_remaining":"499","status_code":200}
-```
-
-#### Missing API Token
-
-```
-[2022-01-31 23:40:26] local.CRITICAL: The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/okta-sdk.php`. Without this API token, you will not be able to performed authenticated API calls. {"event_type":"okta-api-config-missing-error","class":"GitlabIt\\Okta\\ApiClient","status_code":"501","message":"The API token for this Okta connection key is not defined in your `.env` file. The variable name for the API token can be found in the connection configuration in `config/okta-sdk.php`. Without this API token, you will not be able to performed authenticated API calls.","connection_key":"prod"}
-```
-
-#### Invalid API Token
-
-```
-[2022-01-31 23:41:01] local.NOTICE: GET 401 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","event_type":"okta-api-response-client-error","message":"GET 401 https://gitlab.okta.com/api/v1/org","okta_request_id":"Yfhzjforta34Ho5ON3SqeQAADlY","okta_error_causes":[],"okta_error_code":"E0000011","okta_error_id":"oaepVpdl1ZQQO-U7Ki-e_-wHQ","okta_error_link":"E0000011","okta_error_summary":"Invalid token provided","rate_limit_remaining":null,"status_code":401}
-```
-
-#### ApiClient Construct API Token
+You can use [Laravel Collections](https://laravel.com/docs/10.x/collections#available-methods) which are powerful array helper tools that are similar to array searching and SQL queries that you may already be familiar with.
 
 ```php
-$okta_api = new \GitlabIt\Okta\ApiClient('prod', '00fJq-A1b2C3d4E5f6G7h8I9J0-Kl-mNoPqRsTuVwx');
-$okta_api->get('/groups');
+$users = ApiClient::get('users');
+
+$user_collection = collect($users->data)->where('profile.department', 'Security')->toArray();
+
+// This will return an array of users that belong to the Security department based on their profile attribute
 ```
 
-```
-[2022-01-31 23:42:04] local.NOTICE: The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used. {"event_type":"okta-api-config-override-notice","class":"GitlabIt\\Okta\\ApiClient","status_code":"203","message":"The Okta API token for these API calls is using an API token that was provided in the ApiClient construct method. The API token that might be configured in the `.env` file is not being used.","okta_connection":"prod"}
+For syntax conventions and readability, you can easily collapse this into a single line. Since the ApiClient automatically handles any 4xx or 5xx error handling, you do not need to worry about try/catch exceptions.
 
-[2022-01-31 23:42:04] local.INFO: GET 200 https://gitlab.okta.com/api/v1/org {"api_endpoint":"https://gitlab.okta.com/api/v1/org","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/org","event_type":"okta-api-response-info","okta_request_id":"YfhzzDq5PIe70D1-C8HRHwAACdg","rate_limit_remaining":"999","status_code":200}
-
-[2022-01-31 23:42:05] local.INFO: GET 200 https://gitlab.okta.com/api/v1/groups {"api_endpoint":"https://gitlab.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"prod","message":"GET 200 https://gitlab.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"YfhzzK6LrJwm1XbvpcPnGwAAA6g","rate_limit_remaining":"499","status_code":200}
-```
-
-#### Missing Connection Configuration
-
-```
-[2022-01-31 23:43:03] local.CRITICAL: The Okta connection key is not defined in `config/okta-sdk.php` connections array. Without this array config, there is no URL or API token to connect with. {"event_type":"okta-api-config-missing-error","class":"GitlabIt\\Okta\\ApiClient","status_code":"501","message":"The Okta connection key is not defined in `config/okta-sdk.php` connections array. Without this array config, there is no URL or API token to connect with.","connection_key":"test"}
+```php
+$users = collect(ApiClient::get('users')->data)
+    ->where('profile.department', 'Security')
+    ->toArray();
 ```
 
-#### Missing Base URL
+This approach allows you to have the same benefits as if you were doing a SQL query and will feel familiar as you start using collections.
 
-```
-[2022-01-31 23:44:04] local.CRITICAL: The Base URL for this Okta connection key is not defined in `config/okta-sdk.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with. {"event_type":"okta-api-config-missing-error","class":"GitlabIt\\Okta\\ApiClient","status_code":"501","message":"The Base URL for this Okta connection key is not defined in `config/okta-sdk.php` or `.env` file. Without this configuration (ex. `https://mycompany.okta.com`), there is no URL to perform API calls with.","connection_key":"test"}
-```
-
-### Rate Limits
-
-Most rate limits are hit due to pagination with large responses (ex. `/users` endpoint). If you have a large dataset, you may want to consider using `search` query to filter results to a smaller number of results.
-
-If the Okta rate limit is exceeded for an endpoint, a new `\Exception` will be thrown with the message `Okta API rate limit exceeded`. The logs will show warnings for rate limits when 10% of rate limit is remaining.
-
-Most rate limits are per minute, so you may need to add `sleep(#)` to your code to slow down your request, or consider a more efficient way to make API requests. Some endpoints allow you to set a custom per page `limit` value. The maximum value can be found in the Okta API documentation for the endpoint (varies depending on the endpoint).
-
-```
-[2023-02-26 18:04:18] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"5","status_code":200}
-[2023-02-26 18:04:18] local.WARNING: 10 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"10 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"5","okta_rate_limit_limit":"50","okta_rate_limit_percent":10.0,"status_code":200}
-
-[2023-02-26 18:04:18] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"4","status_code":200}
-[2023-02-26 18:04:18] local.WARNING: 8 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"8 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"4","okta_rate_limit_limit":"50","okta_rate_limit_percent":8.0,"status_code":200}
-
-[2023-02-26 18:04:19] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"3","status_code":200}
-[2023-02-26 18:04:19] local.WARNING: 6 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"6 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"3","okta_rate_limit_limit":"50","okta_rate_limit_percent":6.0,"status_code":200}
-
-[2023-02-26 18:04:19] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"2","status_code":200}
-[2023-02-26 18:04:19] local.WARNING: 4 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"4 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"2","okta_rate_limit_limit":"50","okta_rate_limit_percent":4.0,"status_code":200}
-
-[2023-02-26 18:04:20] local.INFO: GET 200 https://dev-12345678.okta.com/api/v1/groups {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","message":"GET 200 https://dev-12345678.okta.com/api/v1/groups","event_type":"okta-api-response-info","okta_request_id":"<string>","rate_limit_remaining":"1","status_code":200}
-[2023-02-26 18:04:20] local.WARNING: 2 percent of Okta API rate limit remaining {"api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","api_method":"GET","class":"GitlabIt\\Okta\\ApiClient","connection_key":"dev","event_type":"okta-api-rate-limit-approaching","message":"2 percent of Okta API rate limit remaining","okta_request_id":"<string>","okta_rate_limit_remaining":"1","okta_rate_limit_limit":"50","okta_rate_limit_percent":2.0,"status_code":200}
-
-[2023-02-26 18:04:20] local.ERROR: Okta API rate limit exceeded {"event_type":"okta-api-rate-limit-exceeded","class":"GitlabIt\\Okta\\ApiClient","status_code":200,"message":"Okta API rate limit exceeded","api_method":"GET","api_endpoint":"https://dev-12345678.okta.com/api/v1/groups","connection_key":"dev","okta_request_id":"<string>","okta_rate_limit_remaining":"1","okta_rate_limit_limit":"50"}
+```sql
+SELECT * FROM users WHERE department='Security';
 ```
 
-The exception is thrown at the same time as the last log entry `Okta API rate limit exceeded` in this example.
+### Collection Methods
 
-## Issue Tracking and Bug Reports
+The most common methods that are useful for filtering data are:
 
-> **Disclaimer:** This is not an official package maintained by the GitLab or Okta product and development teams. This is an internal tool that we use in the GitLab IT department that we have open sourced as part of our company values.
->
-> Please use at your own risk and create merge requests for any bugs that you encounter.
->
-> We do not maintain a roadmap of community feature requests, however we invite you to contribute and we will gladly review your merge requests.
+| Laravel Docs                                                              | Usage Example                         |
+|---------------------------------------------------------------------------|---------------------------------------|
+| [count](https://laravel.com/docs/10.x/collections#method-count)           | [Usage Example](#count-methods)       |
+| [countBy](https://laravel.com/docs/10.x/collections#method-countBy)       | [Usage Example](#count-methods)       |
+| [except](https://laravel.com/docs/10.x/collections#method-except)         | N/A                                   |
+| [filter](https://laravel.com/docs/10.x/collections#method-filter)         | N/A                                   |
+| [flip](https://laravel.com/docs/10.x/collections#method-flip)             | N/A                                   |
+| [groupBy](https://laravel.com/docs/10.x/collections#method-groupBy)       | [Usage Example](#group-method)        |
+| [keyBy](https://laravel.com/docs/10.x/collections#method-keyBy)           | N/A                                   |
+| [only](https://laravel.com/docs/10.x/collections#method-only)             | N/A                                   |
+| [pluck](https://laravel.com/docs/10.x/collections#method-pluck)           | [Usage Example](#pluck-method)        |
+| [sort](https://laravel.com/docs/10.x/collections#method-sort)             | [Usage Example](#sort-methods)        |
+| [sortBy](https://laravel.com/docs/10.x/collections#method-sortBy)         | [Usage Example](#sort-methods)        |
+| [sortKeys](https://laravel.com/docs/10.x/collections#method-sortKeys)     | [Usage Example](#sort-methods)        |
+| [toArray](https://laravel.com/docs/10.x/collections#method-toArray)       | N/A                                   |
+| [transform](https://laravel.com/docs/9.x/collections#method-transform)    | [Usage Example](#transforming-arrays) |
+| [unique](https://laravel.com/docs/10.x/collections#method-unique)         | [Usage Example](#unique-method)       |
+| [values](https://laravel.com/docs/10.x/collections#method-values)         | [Usage Example](#values-method)       |
+| [where](https://laravel.com/docs/10.x/collections#method-where)           | N/A                                   |
+| [whereIn](https://laravel.com/docs/10.x/collections#method-whereIn)       | N/A                                   |
+| [whereNotIn](https://laravel.com/docs/10.x/collections#method-whereNotIn) | N/A                                   |
 
-For GitLab team members, please create an issue in [gitlab-it/okta-sdk](https://gitlab.com/gitlab-it/okta-sdk/okta-sdk/-/issues) (public) or [gitlab-com/it/dev/issue-tracker](https://gitlab.com/gitlab-com/it/dev/issue-tracker) (confidential).
+### Collection Simplified Arrays
 
-## Contributing
+#### Pluck Method
 
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) to learn more about how to contribute.
+You can use collections to get a specific attribute using the [pluck](https://laravel.com/docs/10.x/collections#method-pluck) method.
+
+```php
+// Get an array with email addresses
+$user_job_titles = collect(ApiClient::get('users')->data)
+    ->pluck('profile.email')
+    ->toArray();
+
+// [
+//     0 => 'mspinka@example.com',
+//     1 => 'rferry@example.com',
+//     2 => 'sconnelly@example.com',
+// ]
+```
+
+You can also use the [pluck](https://laravel.com/docs/10.x/collections#method-pluck) method to get two attributes and set one as the array key and the other as the array value.
+
+```php
+// Get an array with email address keys and job title values
+$user_job_titles = collect(ApiClient::get('users')->data)
+    ->pluck('profile.title', 'profile.email')
+    ->toArray();
+
+// [
+//     'rferry@example.com' => 'Senior Frontend Engineer',
+//     'mspinka@example.com' => 'Professional Services Engineer',
+//     'sconnelly@example.com' => 'Frontend Engineer',
+// ]
+```
+
+#### Unique Method
+
+You can use the [unique](https://laravel.com/docs/10.x/collections#method-unique) method to get a list of unique attribute values (ex. job title).
+
+Each method can be daisy chained and is evaluated one-at-a-time in the order shown.
+
+Although programatically it might sound more efficient to find unique array values and then parse them, you have flexibility with collections to handle it however you'd like for readability. The speed improvement and memory footprint is marginal (<10%) and since this is usually handled as a background job, it is recommended to focus on human readability and personal preference.
+
+```php
+// Get an array of unique job titles
+
+// Option 1
+$unique_job_titles = collect(ApiClient::get('users')->data)
+    ->unique('profile.title')
+    ->pluck('profile.title')
+    ->toArray();
+
+// Option 2 (marginally faster)
+$unique_job_titles = collect(ApiClient::get('users')->data)
+    ->pluck('profile.title')
+    ->unique()
+    ->toArray();
+
+// [
+//     236 => 'Professional Services Engineer',
+//     511 => 'Senior Frontend Engineer',
+//     988 => 'Frontend Engineer',
+// ]
+```
+
+#### Values Method
+
+When using the `unique` method, it is using the key of the user record that it found. You should add [values](https://laravel.com/docs/10.x/collections#method-values) method near the end to reset all of the key integers based on the number of results that you have.
+
+```php
+// Get an array of unique job titles
+
+// Option 1
+$unique_job_titles = collect(ApiClient::get('users')->data)
+    ->unique('profile.title')
+    ->pluck('profile.title')
+    ->values()
+    ->toArray();
+
+// Option 2
+$unique_job_titles = collect(ApiClient::get('users')->data)
+    ->pluck('profile.title')
+    ->unique()
+    ->values()
+    ->toArray();
+
+// [
+//     0 => 'Professional Services Engineer',
+//     1 => 'Senior Frontend Engineer',
+//     2 => 'Frontend Engineer',
+// ]
+```
+
+#### Sort Methods
+
+You can alphabetically sort by an attribute value. Simply provide the attribute to [sortBy](https://laravel.com/docs/10.x/collections#method-sortBy) method (nested array values are supported). If you have already used the pluck method and the array value is a string, you can use [sort](https://laravel.com/docs/10.x/collections#method-sort) which doesn't accept an argument.
+
+```php
+// Get an array of unique job titles
+
+// Option 1
+$unique_job_titles = collect(ApiClient::get('users')->data)
+    ->sortBy('profile.title')
+    ->unique('profile.title')
+    ->pluck('profile.title')
+    ->values()
+    ->toArray();
+
+// Option 2
+$unique_job_titles = collect(ApiClient::get('users')->data)
+    ->pluck('profile.title')
+    ->unique()
+    ->sort()
+    ->values()
+    ->toArray();
+
+// [
+//     0 => 'Frontend Engineer',
+//     1 => 'Professional Services Engineer',
+//     2 => 'Senior Frontend Engineer',
+// ]
+```
+
+If you have array key strings, you can use the [sortKeys](https://laravel.com/docs/10.x/collections#method-sortKeys) method to sort the resulting array keys alphabetically.
+
+```php
+// Get an array with email address keys and job title values
+$user_job_titles = collect(ApiClient::get('users')->data)
+    ->pluck('profile.title', 'profile.email')
+    ->sortKeys()
+    ->toArray();
+
+// [
+//     'mspinka@example.com' => 'Professional Services Engineer',
+//     'rferry@example.com' => 'Senior Frontend Engineer',
+//     'sconnelly@example.com' => 'Frontend Engineer',
+// ]
+```
+
+#### Count Methods
+
+You can use the [count](https://laravel.com/docs/10.x/collections#method-count) method to get a count of the total number of results after all methods have been applied. This is used as an alternative to [toArray](https://laravel.com/docs/10.x/collections#method-toArray) so you get an integer value instead of needing to do a `count($collection_array)`.
+
+```php
+// Get a count of unique job titles
+$unique_job_titles = collect(ApiClient::get('users')->data)
+    ->pluck('profile.title')
+    ->unique()
+    ->count();
+
+// 376
+```
+
+You can use the [countBy](https://laravel.com/docs/10.x/collections#method-countBy) method to get a count of unique attribute values. You should use the [sortKeys](https://laravel.com/docs/10.x/collections#method-sortKeys) method to sort the resulting array keys alphabetically.
+
+```php
+// Get a count of unique job titles
+$unique_job_titles = collect(ApiClient::get('users')->data)
+    ->countBy('profile.title')
+    ->sortKeys()
+    ->toArray();
+
+// [
+//     'Frontend Engineer' => 8,
+//     'Professional Services Engineer' => 4,
+//     'Senior Frontend Engineer' => 44,
+// ]
+```
+
+### Transforming Arrays
+
+When working with a record returned from the API, you will have a lot of data that you don't need for the current use case.
+
+#### Raw Response
+
+```php
+// Disclaimer: This is anonymized fake data.
+[
+    {
+      +"id": "00ue2xov9e5xiQmuL5d7",
+      +"status": "ACTIVE",
+      +"created": "2023-12-23T16:49:49.000Z",
+      +"activated": "2023-12-23T16:49:50.000Z",
+      +"statusChanged": "2023-12-23T16:49:50.000Z",
+      +"lastLogin": null,
+      +"lastUpdated": "2023-12-23T16:49:50.000Z",
+      +"passwordChanged": "2023-12-23T16:49:50.000Z",
+      +"type": {
+        +"id": "otye2ebqn49728Yfb5d7",
+      },
+      +"profile": {
+        +"lastName": "Howe",
+        +"costCenter": "Sales",
+        +"displayName": "Angelica Howe",
+        +"secondEmail": null,
+        +"managerId": "5f9632",
+        +"hire_date": "2020-12-19",
+        +"title": "Senior Channel Sales Manager",
+        +"login": "ahowe@example.com",
+        +"employeeNumber": "aee562",
+        +"division": "Sales",
+        +"firstName": "Angelica",
+        +"management_level": "Individual Contributor",
+        +"mobilePhone": null,
+        +"department": "Channel Sales",
+        +"email": "ahowe@example.com",
+      },
+    },
+    {
+      +"id": "00ue2xp1yybaQEE2o5d7",
+      +"status": "ACTIVE",
+      +"created": "2023-12-23T16:49:12.000Z",
+      +"activated": "2023-12-23T16:49:12.000Z",
+      +"statusChanged": "2023-12-23T16:49:12.000Z",
+      +"lastLogin": null,
+      +"lastUpdated": "2023-12-23T16:49:12.000Z",
+      +"passwordChanged": "2023-12-23T16:49:12.000Z",
+      +"type": {
+        +"id": "otye2ebqn49728Yfb5d7",
+      },
+      +"profile": {
+        +"lastName": "O'Kon",
+        +"costCenter": "Sales",
+        +"displayName": "Earlene O'Kon",
+        +"secondEmail": null,
+        +"managerId": "2410f0",
+        +"hire_date": "2019-03-01",
+        +"title": "Manager, Deal Desk",
+        +"login": "eo'kon@example.com",
+        +"employeeNumber": "0561bc",
+        +"division": "Sales",
+        +"firstName": "Earlene",
+        +"management_level": "Manager",
+        +"mobilePhone": null,
+        +"department": "Sales Operations",
+        +"email": "eo'kon@example.com",
+      },
+    },
+  ]
+```
+
+#### Basic Transformations
+
+You can use the [transform](https://laravel.com/docs/10.x/collections#method-groupBy) method to perform a foreach loop over each record and create a new array with the specific fields that you want.
+
+You can think of the `$item` variable as `foreach($users as $item) { }` that has all of the metadata for a specific record.
+
+The transform method uses a function (a.k.a. closure) to return an array that should become the new value for this specific array key.
+
+```php
+// Get all Okta users
+$users = collect(ApiClient::get('users')->data)
+    ->transform(function($item) {
+        return [
+            'id' => $item->id,
+            'displayName' => $item->profile->displayName,
+            'email' => $item->profile->email,
+            'title' => $item->profile->title,
+            'department' => $item->profile->department
+        ];
+    })->toArray();
+
+// [
+//     "id" => "00ue2xov9e5xiQmuL5d7",
+//     "displayName" => "Angelica Howe",
+//     "email" => "ahowe@example.com",
+//     "title" => "Senior Channel Sales Manager",
+//     "department" => "Channel Sales",
+// ],
+// [
+//     "id" => "00ue2xp1yybaQEE2o5d7",
+//     "displayName" => "Earlene O'Kon",
+//     "email" => "eo'kon@example.com",
+//     "title" => "Manager, Deal Desk",
+//     "department" => "Sales Operations",
+// ],
+```
+
+##### Checking If Attributes Exist
+
+When working with the transform method, you do need to check if values exist using [isset](https://www.php.net/manual/en/function.isset.php) or set them to null for fields that not every record will have. You will have additional debugging problems if you are using [null coalescing operators](https://www.php.net/manual/en/migration70.new-features.php#migration70.new-features.null-coalesce-op), so it is recommended to stick with `isset()`. It is best practice to use [ternary operators](https://www.phptutorial.net/php-tutorial/php-ternary-operator/) for consistent syntax.
+
+```php
+$users = collect(ApiClient::get('users')->data)
+    ->transform(function($item) {
+        return [
+            'id' => $item->id,
+            'displayName' => $item->profile->displayName,
+            'email' => $item->profile->email,
+            'title' => isset($item->profile->title) ? $item->profile->title : null,
+            'department' => isset($item->profile->department) ? $item->profile->department : null
+        ];
+    })->toArray();
+```
+
+##### Arrow Functions
+
+If all of your transformations can be done in-line in the array and don't require defining additional variables (see [Advanced Transformations](#advanced-transformations)), you can use the shorthand arrow functions. This is a personal preference and not a requirement.
+
+```php
+$users = collect(ApiClient::get('users')->data)
+    ->transform(fn($item) => [
+        'id' => $item->id,
+        'displayName' => $item->profile->displayName,
+        'email' => $item->profile->email,
+        'title' => isset($item->profile->title) ? $item->profile->title : null,
+        'department' => isset($item->profile->department) ? $item->profile->department : null
+    ])->toArray();
+```
+
+#### Advanced Transformations
+
+You can also perform additional calculations in the transform function before passing the value to the array. This provides you the most flexibility, freedom, and power to do whatever you need to do.
+
+It is up to you whether to define variables or perform the calculations inline.
+
+```php
+use Carbon\Carbon;
+
+$users = collect(ApiClient::get('users')->data)
+    ->transform(function($item) {
+        // Calculate dates using Carbon (https://carbon.nesbot.com/docs/)
+        $created_date = Carbon::parse($item->created)->format('Y-m-d');
+        $created_date_age = Carbon::parse($item->created)->diffInDays();
+
+        // It is recommended to use match statements instead of if/else statements for string matching use cases
+        $elevated_permissions = match($item->profile->department) {
+            'Infrastructure' => true,
+            'IT' => true,
+            'Security' => true,
+            default => false
+        };
+
+        return [
+            'id' => $item->id,
+            'displayName' => $item->profile->displayName,
+            'email' => $item->profile->email,
+            'title' => isset($item->profile->title) ? $item->profile->title : null,
+            'department' => isset($item->profile->department) ? $item->profile->department : null,
+            'created_date' => $created_date,
+            'new_user' => ($created_date_age < 60 ? true : false),
+            'elevated_permissions' => $elevated_permissions
+        ];
+    })->toArray();
+
+// [
+//     "id" => "00ue2xov9e5xiQmuL5d7",
+//     "displayName" => "Angelica Howe",
+//     "email" => "ahowe@example.com",
+//     "title" => "Senior Channel Sales Manager",
+//     "department" => "Channel Sales",
+//     "created_date" => "2023-12-23",
+//     "new_user" => true,
+//     "elevated_permissions" => false,
+// ],
+// [
+//     "id" => "00ue2xp1yybaQEE2o5d7",
+//     "displayName" => "Earlene O'Kon",
+//     "email" => "eo'kon@example.com",
+//     "title" => "Manager, Deal Desk",
+//     "department" => "Sales Operations",
+//     "created_date" => "2023-12-23",
+//     "new_user" => true,
+//     "elevated_permissions" => false,
+// ],
+```
+
+#### Group Method
+
+Although you can use a [groupBy](https://laravel.com/docs/10.x/collections#method-groupBy) method with a raw response, it is very difficult to manipulate the data once it's grouped, so it is recommended to transform your data and then add the `groupBy('attribute_name')` to the end of your collection chain. Keep in mind that you renamed your array value keys (attributes) when you transformed the data so you want to use the new array key. In the example, we defined a new `department` attribute and `profile.department` is no longer accessible.
+
+```php
+$users = collect(ApiClient::get('users')->data)
+    ->transform(fn($item) => [
+        'id' => $item->id,
+        'displayName' => $item->profile->displayName,
+        'email' => $item->profile->email,
+        'title' => isset($item->profile->title) ? $item->profile->title : null,
+        'department' => isset($item->profile->department) ? $item->profile->department : null
+    ])->groupBy('department')
+    ->toArray();
+
+// "Channel Sales" => [
+//     [
+//         "id" => "00ue2xov9e5xiQmuL5d7",
+//         "displayName" => "Angelica Howe",
+//         "email" => "ahowe@example.com",
+//         "title" => "Senior Channel Sales Manager",
+//         "department" => "Channel Sales",
+//     ],
+// ],
+// "Sales Operations" => [
+//     [
+//         "id" => "00ue2xp1yybaQEE2o5d7",
+//         "displayName" => "Earlene O'Kon",
+//         "email" => "eo'kon@example.com",
+//         "title" => "Manager, Deal Desk",
+//         "department" => "Sales Operations",
+//     ],
+//     [
+//         "id" => "00ue2xpoh6h5rfN315d7",
+//         "displayName" => "Rylee Veum",
+//         "email" => "rveum@example.com",
+//         "title" => "Senior Program Manager, Customer Programs",
+//         "department" => "Sales Operations",
+//     ],
+// ],
+```
+
+### Additional Reading
+
+See the [Laravel Collections](https://laravel.com/docs/10.x/collections) documentation for additional usage. See the [provisionesta/okta-laravel-actions](https://gitlab.com/provisionesta/okta-laravel-actions) package for additional real-life examples.

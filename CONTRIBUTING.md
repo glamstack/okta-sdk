@@ -6,13 +6,9 @@ Please consider these to be guidelines. If in doubt, please create an issue and 
 
 ## Feature Requests and Ideas
 
-> **Disclaimer:** This is not an official package maintained by the GitLab or Okta product and development teams. This is an internal tool that we use in the GitLab IT department that we have open sourced as part of our company values.
->
-> Please use at your own risk and create merge requests for any bugs that you encounter.
+> **Disclaimer:** This is not an official package maintained by any company. Please use at your own risk and create merge requests for any bugs that you encounter.
 
-We do not maintain a roadmap of community feature requests, however we invite you to contribute and we will gladly review your merge requests.
-
-For GitLab team members, please create an issue in [gitlab-it/okta-sdk](https://gitlab.com/gitlab-it/okta-sdk/okta-sdk/-/issues) (public) or [gitlab-com/it/dev/issue-tracker](https://gitlab.com/gitlab-com/it/dev/issue-tracker) (confidential).
+We do not maintain a roadmap of feature requests, however we invite you to contribute and we will gladly review your merge requests.
 
 ## Code Contributions
 
@@ -30,18 +26,18 @@ respective Laravel version.
 ```bash
 # Set temporary environment variable
 export SDK_LARAVEL_VERSION=10
-cd ~/Sites
+cd ~/Code
 # Create new Laravel projects
 composer create-project laravel/laravel:^${SDK_LARAVEL_VERSION}.0 laravel${SDK_LARAVEL_VERSION}-pkg-test
 # Create sylinks in directory
-mkdir -p laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/gitlab-it
-ln -s ~/Sites/okta-sdk ~/Sites/laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/gitlab-it/okta-sdk
+mkdir -p laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/provisionesta
+ln -s ~/Code/okta-api-client ~/Code/laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/provisionesta/okta-api-client
 # Custom repository location configuration
-cd ~/Sites/laravel${SDK_LARAVEL_VERSION}-pkg-test
-sed -i '.bak' -e 's/seeders\/"/&,\n            "GitlabIt\\\\Okta\\\\": "packages\/gitlab-it\/okta-sdk\/src"/g' composer.json
-composer config repositories.okta-sdk '{"type": "path", "url": "packages/gitlab-it/okta-sdk"}' --file composer.json
-composer require gitlab-it/okta-sdk:dev-main
-php artisan vendor:publish --tag=okta-sdk
+cd ~/Code/laravel${SDK_LARAVEL_VERSION}-pkg-test
+sed -i '.bak' -e 's/seeders\/"/&,\n            "Provisionesta\\\\Okta\\\\": "packages\/provisionesta\/okta-api-client\/src"/g' composer.json
+composer config repositories.okta-api-client '{"type": "path", "url": "packages/provisionesta/okta-api-client"}' --file composer.json
+composer require provisionesta/okta-api-client:dev-main
+php artisan vendor:publish --tag=okta-api-client
 # Unset temporary environment variable
 unset SDK_LARAVEL_VERSION
 ```
@@ -56,16 +52,16 @@ You can mitigate this problem by creating a local symlink (with resolved namespa
 
 ```bash
 # Pre-Requisite (you should already have this)
-# You can use any directory you want (if not using ~/Sites)
-cd ~/Sites
-git clone https://gitlab.com/gitlab-it/okta-sdk.git
+# You can use any directory you want (if not using ~/Code)
+cd ~/Code
+git clone https://gitlab.com/provisionesta/okta-api-client.git
 ```
 
 ```bash
-cd ~/Sites/{my-laravel-app}
-mkdir -p packages/gitlab-it
-cd packages/gitlab-it
-ln -s ~/Sites/okta-sdk okta-sdk
+cd ~/Code/{my-laravel-app}
+mkdir -p packages/provisionesta
+cd packages/provisionesta
+ln -s ~/Code/okta-api-client okta-api-client
 ```
 
 ### Application Composer
@@ -73,12 +69,12 @@ ln -s ~/Sites/okta-sdk okta-sdk
 Update the `composer.json` file in your testing application (not the package) to add the package to the `autoload.psr-4` array (append the array, don't replace anything).
 
 ```json
-# ~/Sites/{my-laravel-app}/composer.json
+# ~/Code/{my-laravel-app}/composer.json
 
 "autoload": {
     "psr-4": {
         "App\\": "app/",
-        "GitlabIt\\Okta\\": "packages/gitlab-it/okta-sdk/src",
+        "Provisionesta\\Okta\\": "packages/provisionesta/okta-api-client/src",
     }
 },
 ```
@@ -88,22 +84,22 @@ Update the `composer.json` file in your testing application (not the package) to
 Credit: https://laravel-news.com/developing-laravel-packages-with-local-composer-dependencies
 
 ```bash
-cd ~/Sites/{my-laravel-app}
+cd ~/Code/{my-laravel-app}
 
-composer config repositories.okta-sdk '{"type": "path", "url": "packages/gitlab-it/okta-sdk"}' --file composer.json
+composer config repositories.okta-api-client '{"type": "path", "url": "packages/provisionesta/okta-api-client"}' --file composer.json
 
-composer require gitlab-it/okta-sdk:dev-main
+composer require provisionesta/okta-api-client:dev-main
 
 # Package operations: 1 install, 0 updates, 0 removals
-#  - Installing gitlab-it/okta-sdk (dev-main): Symlinking from packages/gitlab-it/okta-sdk
+#  - Installing provisionesta/okta-api-client (dev-main): Symlinking from packages/provisionesta/okta-api-client
 ```
 
 ### Validation and Config Copy
 
 ```bash
-php artisan vendor:publish --tag=okta-sdk
+php artisan vendor:publish --tag=okta-api-client
 
-# Copied File [/Users/jmartin/Sites/okta-sdk/src/Config/okta-sdk.php] To [/config/okta-sdk.php]
+# Copied File [/Users/jmartin/Code/okta-api-client/src/Config/okta-api-client.php] To [/config/okta-api-client.php]
 # Publishing complete.
 ```
 

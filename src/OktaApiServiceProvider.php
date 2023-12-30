@@ -1,10 +1,10 @@
 <?php
 
-namespace GitlabIt\Okta;
+namespace Provisionesta\Okta;
 
 use Illuminate\Support\ServiceProvider;
 
-class OktaServiceProvider extends ServiceProvider
+class OktaApiServiceProvider extends ServiceProvider
 {
     // use ServiceBindings;
 
@@ -38,19 +38,22 @@ class OktaServiceProvider extends ServiceProvider
      */
     protected function mergeConfig(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/Config/okta-sdk.php', 'okta-sdk');
+        $this->mergeConfigFrom(__DIR__ . '/Config/okta-api-client.php', 'okta-api-client');
     }
 
     /**
      * Publish config file to application
      *
      * Once the `php artisan vendor::publish` command is run, you can use the
-     * configuration file values `$value = config('okta-sdk.option');`
+     * configuration file values `$value = config('okta-api-client.option');`
      */
     protected function publishConfigFile(): void
     {
         if ($this->app->runningInConsole()) {
-            $this->publishes([__DIR__ . '/Config/okta-sdk.php' => config_path('okta-sdk.php')], 'okta-sdk');
+            $this->publishes(
+                [__DIR__ . '/Config/okta-api-client.php' => config_path('okta-api-client.php')],
+                'okta-api-client'
+            );
         }
     }
 
@@ -64,8 +67,8 @@ class OktaServiceProvider extends ServiceProvider
         if (property_exists($this, 'serviceBindings')) {
             foreach ($this->serviceBindings as $key => $value) {
                 is_numeric($key)
-                        ? $this->app->singleton($value)
-                        : $this->app->singleton($key, $value);
+                    ? $this->app->singleton($value)
+                    : $this->app->singleton($key, $value);
             }
         }
     }
