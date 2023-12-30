@@ -104,6 +104,10 @@ class ApiClient
      */
     private static function validateConnection(array $connection): array
     {
+        if (empty($connection)) {
+            $connection = config('okta-api-client');
+        }
+
         $validator = Validator::make($connection, [
             'url' => 'required|url:https',
             'token' => 'required|alpha_dash|size:42',
