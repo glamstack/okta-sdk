@@ -685,7 +685,7 @@ class ApiClient
                 response: $response
             );
             self::throwExceptionIfEnabled(
-                method: 'get',
+                method: 'get|paginated',
                 url: $paginated_url,
                 response: $response
             );
