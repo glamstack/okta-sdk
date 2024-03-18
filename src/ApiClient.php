@@ -992,7 +992,7 @@ class ApiClient
                 case 429:
                     throw new RateLimitException($message);
                 case 500:
-                    throw new ServerErrorException($response->json);
+                    throw new ServerErrorException(json_encode($response->data));
             }
         }
     }
