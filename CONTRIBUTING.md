@@ -29,7 +29,7 @@ export SDK_LARAVEL_VERSION=10
 cd ~/Code
 # Create new Laravel projects
 composer create-project laravel/laravel:^${SDK_LARAVEL_VERSION}.0 laravel${SDK_LARAVEL_VERSION}-pkg-test
-# Create sylinks in directory
+# Create symlinks in directory
 mkdir -p laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/provisionesta
 ln -s ~/Code/okta-api-client ~/Code/laravel${SDK_LARAVEL_VERSION}-pkg-test/packages/provisionesta/okta-api-client
 # Custom repository location configuration
@@ -40,6 +40,19 @@ composer require provisionesta/okta-api-client:dev-main
 php artisan vendor:publish --tag=okta-api-client
 # Unset temporary environment variable
 unset SDK_LARAVEL_VERSION
+```
+
+You can link this package into an existing Laravel application using the following commands.
+
+```bash
+ce ~/Code/my-project-name
+
+mkdir -p packages/provisionesta
+ln -s ~/Code/okta-api-client packages/provisionesta/okta-api-client
+sed -i '.bak' -e 's/seeders\/"/&,\n            "Provisionesta\\\\Okta\\\\": "packages\/provisionesta\/okta-api-client\/src"/g' composer.json
+composer config repositories.okta-api-client '{"type": "path", "url": "packages/provisionesta/okta-api-client"}' --file composer.json
+composer require provisionesta/okta-api-client:dev-main
+php artisan vendor:publish --tag=okta-api-client
 ```
 
 ## Custom Application Configuration
@@ -81,7 +94,7 @@ Update the `composer.json` file in your testing application (not the package) to
 
 ### Configure Local Composer Repository
 
-Credit: https://laravel-news.com/developing-laravel-packages-with-local-composer-dependencies
+Credit: [https://laravel-news.com/developing-laravel-packages-with-local-composer-dependencies](https://laravel-news.com/developing-laravel-packages-with-local-composer-dependencies)
 
 ```bash
 cd ~/Code/{my-laravel-app}
