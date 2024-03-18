@@ -47,53 +47,16 @@ class ApiClient
             connection: $connection
         );
 
-        if ($response->status->ok) {
-            Log::create(
-                event_type: 'okta.api.test.success',
-                level: 'debug',
-                message: 'Success',
-                method: __METHOD__,
-                record_provider_id: $response->data->id,
-                transaction: false
-            );
-            return true;
-        } else {
-            if (property_exists($response->data, 'errorCode')) {
-                Log::create(
-                    errors: [
-                        'error_code' => $response->data->errorCode ?? null,
-                        'error_message' => $response->data->errorSummary ?? null,
-                        'status_code' => $response->status->code,
-                    ],
-                    event_type: 'okta.api.test.error.' . Str::lower($response->data->errorCode),
-                    level: 'critical',
-                    message: 'Failed',
-                    method: __METHOD__,
-                    transaction: true
-                );
-                throw new ConfigurationException(implode(' ', [
-                    'Okta API connection test failed.',
-                    $response->data->errorCode,
-                    $response->data->errorSummary,
-                ]));
-            } else {
-                Log::create(
-                    errors: [
-                        'error_message' => 'None provided by Okta API',
-                        'status_code' => $response->status->code,
-                    ],
-                    event_type: 'okta.api.test.error.unknown',
-                    level: 'critical',
-                    message: 'Failed',
-                    method: __METHOD__,
-                    transaction: true
-                );
-                throw new ConfigurationException(implode(' ', [
-                    'Okta API connection test failed.',
-                    'Unknown reason. Status Code ' . $response->status->code,
-                ]));
-            }
-        }
+        Log::create(
+            event_type: 'okta.api.test.success',
+            level: 'debug',
+            message: 'Success',
+            method: __METHOD__,
+            record_provider_id: $response->data->id,
+            transaction: false
+        );
+
+        return true;
     }
 
     /**
