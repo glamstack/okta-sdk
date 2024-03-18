@@ -383,7 +383,7 @@ The Okta API uses `profile` child arrays for several resources. Most metadata th
 
 You can also use [Laravel Collections](https://laravel.com/docs/10.x/collections#available-methods) to filter and transform results, either using a full data set or one that you already filtered with your API request.
 
-See [Using Laravel Collections](responses.md#using-laravel-collections) in the [API Responses](responses.md) documentation.
+See [Using Laravel Collections](#using-laravel-collections) to learn more.
 
 ##### Search for Records with Specific Name
 
@@ -1154,7 +1154,7 @@ When working with a record returned from the API, you will have a lot of data th
 
 #### Basic Transformations
 
-You can use the [transform](https://laravel.com/docs/10.x/collections#method-groupBy) method to perform a foreach loop over each record and create a new array with the specific fields that you want.
+You can use the [transform](https://laravel.com/docs/10.x/collections#method-transform) method to perform a foreach loop over each record and create a new array with the specific fields that you want.
 
 You can think of the `$item` variable as `foreach($users as $item) { }` that has all of the metadata for a specific record.
 
