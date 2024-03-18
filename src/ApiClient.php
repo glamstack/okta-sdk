@@ -31,6 +31,12 @@ class ApiClient
     /**
      * Test the connection to the Okta API using a simple API endpoint
      *
+     * Example Usage:
+     * ```php
+     * use Provisionesta\Okta\ApiClient;
+     * ApiClient::testConnection();
+     * ```
+     *
      * @link https://developer.okta.com/docs/reference/api/org/#get-org-settings
      *
      * @param array $connection (optional)
@@ -47,57 +53,20 @@ class ApiClient
             connection: $connection
         );
 
-        if ($response->status->ok) {
-            Log::create(
-                event_type: 'okta.api.test.success',
-                level: 'debug',
-                message: 'Success',
-                method: __METHOD__,
-                record_provider_id: $response->data->id,
-                transaction: false
-            );
-            return true;
-        } else {
-            if (property_exists($response->data, 'errorCode')) {
-                Log::create(
-                    errors: [
-                        'error_code' => $response->data->errorCode ?? null,
-                        'error_message' => $response->data->errorSummary ?? null,
-                        'status_code' => $response->status->code,
-                    ],
-                    event_type: 'okta.api.test.error.' . Str::lower($response->data->errorCode),
-                    level: 'critical',
-                    message: 'Failed',
-                    method: __METHOD__,
-                    transaction: true
-                );
-                throw new ConfigurationException(implode(' ', [
-                    'Okta API connection test failed.',
-                    $response->data->errorCode,
-                    $response->data->errorSummary,
-                ]));
-            } else {
-                Log::create(
-                    errors: [
-                        'error_message' => 'None provided by Okta API',
-                        'status_code' => $response->status->code,
-                    ],
-                    event_type: 'okta.api.test.error.unknown',
-                    level: 'critical',
-                    message: 'Failed',
-                    method: __METHOD__,
-                    transaction: true
-                );
-                throw new ConfigurationException(implode(' ', [
-                    'Okta API connection test failed.',
-                    'Unknown reason. Status Code ' . $response->status->code,
-                ]));
-            }
-        }
+        Log::create(
+            event_type: 'okta.api.test.success',
+            level: 'debug',
+            message: 'Success',
+            method: __METHOD__,
+            record_provider_id: $response->data->id,
+            transaction: false
+        );
+
+        return true;
     }
 
     /**
-     * Validate connection key and connection config array
+     * Validate connection config array
      *
      * @param array $connection
      *      An array with `url` and `token`.
@@ -137,7 +106,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $response = ApiClient::get(
      *     uri: 'users/' . $id,
      *     data: [
@@ -147,7 +116,7 @@ class ApiClient
      * ```
      *
      * @param string $uri
-     *      The URI without leading slash after `/api/v1/`
+     *      The URI with or without leading slash after `/api/v1/`
      *
      * @param array $data (optional)
      *      Query data to apply to GET request
@@ -253,7 +222,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $response = ApiClient::post(
      *     uri: 'groups',
      *     data: [
@@ -269,7 +238,7 @@ class ApiClient
      *      The URI without leading slash after `/api/v1/`
      *
      * @param array $data (optional)
-     *      Optional Post Body array
+     *      Post Body array
      *
      * @param array $connection (optional)
      *      An array with `url` and `token`.
@@ -335,7 +304,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $group_id = '00g1ab2c4d4e5f6g7h8i';
      * $response = ApiClient::patch(
      *     uri: 'groups/' . $group_id',
@@ -407,7 +376,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $group_id = '00g1ab2c4d4e5f6g7h8i';
      * $response = ApiClient::put(
      *     uri: 'groups/' . $group_id',
@@ -479,7 +448,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $group_id = '00g1ab2c4d4e5f6g7h8i';
      * $response = ApiClient::delete(
      *     connection: $okta_organization->connection_config,
@@ -553,7 +522,12 @@ class ApiClient
 
         return [
             'Authorization' => 'SSWS ' . $connection['token'],
-            'User-Agent' => $package_name . ' ' . 'Laravel/' . app()->version() . ' ' . 'PHP/' . phpversion()
+            'User-Agent' => implode(' ', [
+                $package_name,
+                'provisionesta/okta-api-client',
+                'Laravel/' . app()->version(),
+                'PHP/' . phpversion()
+            ])
         ];
     }
 
@@ -679,11 +653,6 @@ class ApiClient
      *
      * @link https://developer.okta.com/docs/reference/core-okta-api/#pagination
      *
-     * Example Usage:
-     * ```php
-     * $this->getPaginatedResults('/users');
-     * ```
-     *
      * @param array $connection
      *      An array with `url` and `token`.
      *
@@ -716,7 +685,7 @@ class ApiClient
                 response: $response
             );
             self::throwExceptionIfEnabled(
-                method: 'get',
+                method: 'get|paginated',
                 url: $paginated_url,
                 response: $response
             );
@@ -736,7 +705,7 @@ class ApiClient
     /**
      * Parse the API response and return custom formatted response for consistency
      *
-     * @see https://laravel.com/docs/8.x/http-client#making-requests
+     * @link https://laravel.com/docs/10.x/http-client#making-requests
      *
      * @param object $response
      *      Response object from API results
@@ -1023,7 +992,7 @@ class ApiClient
                 case 429:
                     throw new RateLimitException($message);
                 case 500:
-                    throw new ServerErrorException($response->json);
+                    throw new ServerErrorException(json_encode($response->data));
             }
         }
     }
