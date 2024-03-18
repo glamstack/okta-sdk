@@ -31,6 +31,12 @@ class ApiClient
     /**
      * Test the connection to the Okta API using a simple API endpoint
      *
+     * Example Usage:
+     * ```php
+     * use Provisionesta\Okta\ApiClient;
+     * ApiClient::testConnection();
+     * ```
+     *
      * @link https://developer.okta.com/docs/reference/api/org/#get-org-settings
      *
      * @param array $connection (optional)
@@ -100,7 +106,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $response = ApiClient::get(
      *     uri: 'users/' . $id,
      *     data: [
@@ -216,7 +222,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $response = ApiClient::post(
      *     uri: 'groups',
      *     data: [
@@ -298,7 +304,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $group_id = '00g1ab2c4d4e5f6g7h8i';
      * $response = ApiClient::patch(
      *     uri: 'groups/' . $group_id',
@@ -370,7 +376,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $group_id = '00g1ab2c4d4e5f6g7h8i';
      * $response = ApiClient::put(
      *     uri: 'groups/' . $group_id',
@@ -442,7 +448,7 @@ class ApiClient
      *
      * Example Usage:
      * ```php
-     * use \Provisionesta\Okta\ApiClient;
+     * use Provisionesta\Okta\ApiClient;
      * $group_id = '00g1ab2c4d4e5f6g7h8i';
      * $response = ApiClient::delete(
      *     connection: $okta_organization->connection_config,
