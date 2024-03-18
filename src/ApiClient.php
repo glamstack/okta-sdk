@@ -66,7 +66,7 @@ class ApiClient
     }
 
     /**
-     * Validate connection key and connection config array
+     * Validate connection config array
      *
      * @param array $connection
      *      An array with `url` and `token`.
@@ -116,7 +116,7 @@ class ApiClient
      * ```
      *
      * @param string $uri
-     *      The URI without leading slash after `/api/v1/`
+     *      The URI with or without leading slash after `/api/v1/`
      *
      * @param array $data (optional)
      *      Query data to apply to GET request
@@ -238,7 +238,7 @@ class ApiClient
      *      The URI without leading slash after `/api/v1/`
      *
      * @param array $data (optional)
-     *      Optional Post Body array
+     *      Post Body array
      *
      * @param array $connection (optional)
      *      An array with `url` and `token`.
@@ -522,7 +522,12 @@ class ApiClient
 
         return [
             'Authorization' => 'SSWS ' . $connection['token'],
-            'User-Agent' => $package_name . ' ' . 'Laravel/' . app()->version() . ' ' . 'PHP/' . phpversion()
+            'User-Agent' => implode(' ', [
+                $package_name,
+                'provisionesta/okta-api-client',
+                'Laravel/' . app()->version(),
+                'PHP/' . phpversion()
+            ])
         ];
     }
 
@@ -648,11 +653,6 @@ class ApiClient
      *
      * @link https://developer.okta.com/docs/reference/core-okta-api/#pagination
      *
-     * Example Usage:
-     * ```php
-     * $this->getPaginatedResults('/users');
-     * ```
-     *
      * @param array $connection
      *      An array with `url` and `token`.
      *
@@ -705,7 +705,7 @@ class ApiClient
     /**
      * Parse the API response and return custom formatted response for consistency
      *
-     * @see https://laravel.com/docs/8.x/http-client#making-requests
+     * @link https://laravel.com/docs/10.x/http-client#making-requests
      *
      * @param object $response
      *      Response object from API results
