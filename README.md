@@ -118,10 +118,10 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) to learn more about how to contrib
 
 ### Requirements
 
-| Requirement | Version                          |
-|-------------|----------------------------------|
-| PHP         | `^8.0`                           |
-| Laravel     | `^8.0`, `^9.0`, `^10.0`, `^11.0` |
+| Requirement | Version                                   |
+|-------------|-------------------------------------------|
+| PHP         | `^8.0`                                    |
+| Laravel     | `^8.0`, `^9.0`, `^10.0`, `^11.0`, `^12.0` |
 
 ### Upgrade Guide
 
@@ -134,7 +134,7 @@ Still using `gitlab-it/okta-sdk` (v3.x)? See the [v4.0 changelog](changelog/4.0.
 ### Add Composer Package
 
 ```plain
-composer require provisionesta/okta-api-client:^4.0
+composer require provisionesta/okta-api-client:^4.2
 ```
 
 If you are contributing to this package, see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on configuring a local composer package with symlinks.
