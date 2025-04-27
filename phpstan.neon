@@ -17,5 +17,3 @@ parameters:
             path: src/Config/okta-api-client.php
     excludePaths:
         - ./*/*/FileToBeExcluded.php
-
-    checkMissingIterableValueType: false
