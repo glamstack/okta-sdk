@@ -10,8 +10,6 @@ parameters:
     level: 9
 
     ignoreErrors:
-        - '#Access to an undefined property object::\$headers.#'
-        - '#Access to an undefined property object::\$status.#'
         -
             identifier: larastan.noEnvCallsOutsideOfConfig
             path: src/Config/okta-api-client.php
