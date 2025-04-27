@@ -121,7 +121,7 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) to learn more about how to contrib
 | Requirement | Version                          |
 |-------------|----------------------------------|
 | PHP         | `^8.0`                           |
-| Laravel     | `^8.0`, `^9.0`, `^10.0`, `^11.0` |
+| Laravel     | `^8.0`, `^9.0`, `^10.0`, `^11.0`, `^12.0` |
 
 ### Upgrade Guide
 
